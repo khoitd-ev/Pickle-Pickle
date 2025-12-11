@@ -1,0 +1,281 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* moved from unsupported @theme rule */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+.font-pickle {
+  font-family: var(--font-pickle), system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+/* ========== HEADER ========== */
+
+.pp-header {
+  background-color: #000;
+  color: #fff;
+  border-bottom: 1px solid #333;
+
+  position: sticky; 
+  top: 0;
+  z-index: 50;
+}
+
+
+.pp-header__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.pp-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.pp-header__brand-text {
+  font-weight: 600;
+}
+
+.pp-header__right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.pp-header__link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pp-header__link:hover {
+  opacity: 0.8;
+}
+
+/*.pp-header__dropdown {*/
+  /* sau này nếu bạn làm menu xổ xuống thì thêm ở đây */
+/*}*/
+
+.pp-header__caret {
+  font-size: 10px;
+}
+
+.pp-header__divider {
+  width: 1px;
+  height: 16px;
+  background-color: #555;
+}
+
+
+.pp-header__logo {
+  height: 40px;   
+  width: auto;    
+}
+.pp-header__brand-text {
+  font-family: var(--font-pickle), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 1.5rem; /* chỉnh tùy ý */
+  letter-spacing: 0.02em;
+}
+
+/* Icon + text (Thông báo, Lịch sử) */
+.pp-header__icon-btn {
+  display: inline-flex;      /* icon nằm ngang với chữ */
+  align-items: center;
+  gap: 6px;                  /* khoảng cách icon – chữ */
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.pp-header__icon-btn:hover {
+  opacity: 0.85;
+}
+
+.pp-header__icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* User block */
+.pp-header__user {
+  display: flex;
+  flex-direction: column;   
+  align-items: center;     
+  gap: 4px;                
+  margin-left: 24px;
+}
+
+.pp-header__user-text {
+  font-size: 12px;
+  color: #f5f5f5;
+  text-align: center;       
+}
+
+
+.pp-header__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 1px solid #444;
+  background: #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pp-header__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pp-header__user-text {
+  font-size: 12px;
+  color: #f5f5f5;
+}
+
+.pp-header__user-name {
+  font-weight: 600;
+}
+
+
+
+/* ========== FOOTER ========== */
+
+.pp-footer {
+  background-color: #000;
+  color: #f5f5f5;
+  border-top: 1px solid #333;
+  margin-top: 40px; /* hoặc 0 nếu muốn sát */
+}
+
+
+.pp-footer__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 24px 32px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 80px;
+  row-gap: 40px;
+}
+
+@media (max-width: 900px) {
+  .pp-footer__inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pp-footer__col {
+  min-width: 0;
+}
+
+.pp-footer__title {
+  font-size: 24px;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+.pp-footer__desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #d4d4d4;
+  max-width: 320px;
+}
+
+.pp-footer__list {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  font-size: 14px;
+}
+
+.pp-footer__item,
+.pp-footer__item-text {
+  margin-bottom: 14px;
+}
+
+.pp-footer__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+
+
+.pp-footer__icon-wrapper {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pp-footer__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.pp-footer__link:hover {
+  opacity: 0.85;
+}
+
+.pp-footer__bottom {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 32px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+.pp-footer__social {
+  display: flex;
+  align-items: center;
+  gap: 8px;          /* khoảng cách giữa chữ “Mạng xã hội:” và icon */
+}
+
+.pp-footer__social-icons {
+  display: flex;
+  align-items: center;
+  gap: 6px;          /* nếu sau này có thêm nhiều icon (FB, X, …) */
+}

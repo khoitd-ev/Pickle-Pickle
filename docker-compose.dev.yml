@@ -1,0 +1,39 @@
+services:
+  web:
+    image: node:22.21.1-alpine
+    #network_mode: bridge
+    working_dir: /app
+    command: sh -lc "npm ci && npm run dev"
+    env_file: ./frontend/.env
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - NEXT_TELEMETRY_DISABLED=1
+    ports: ["3000:3000"]
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on: [api]
+
+  api:
+    image: node:22.21.1-alpine
+    #network_mode: bridge
+    working_dir: /app
+    command: sh -lc "npm ci && npm run dev"
+    env_file: ./backend/.env
+    environment: [ NODE_ENV=development ]
+    ports: ["4000:4000"]
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on: [mongo, redis]
+
+  mongo:
+    image: mongo:7.0.14
+    volumes: [ "mongo-data:/data/db" ]
+
+  redis:
+    image: redis:7.2.4-alpine
+
+volumes:
+  mongo-data:
