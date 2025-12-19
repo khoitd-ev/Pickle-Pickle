@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { User } from "../../models/user.model.js";
 import { Role } from "../../models/role.model.js";
 import { UserRole } from "../../models/userRole.model.js";
-import { hashPassword } from "../../shared/utils/password.js";
+import { verifyPassword,hashPassword } from "../../shared/utils/password.js";
 import { HttpError } from "../../shared/errors/httpError.js";
 import { Venue } from "../../models/venue.model.js";
 
@@ -491,8 +491,27 @@ export async function listOwnerUsersService(adminId, query = {}) {
     .sort({ createdAt: -1 })
     .lean();
 
-  return users.map(mapOwnerUser);
+  if (users.length === 0) return [];
+
+  
+  const ownerObjectIds = users.map((u) => u._id);
+
+  const counts = await Venue.aggregate([
+    { $match: { manager: { $in: ownerObjectIds } } },
+    { $group: { _id: "$manager", count: { $sum: 1 } } },
+  ]);
+
+  const countMap = counts.reduce((acc, cur) => {
+    acc[cur._id.toString()] = cur.count;
+    return acc;
+  }, {});
+
+  return users.map((u) => ({
+    ...mapOwnerUser(u),
+    venuesCount: countMap[u._id.toString()] || 0,
+  }));
 }
+
 
 /**
  * Tạo chủ sân mới (admin tạo -> auto emailVerified = true)
@@ -627,4 +646,96 @@ export async function deleteOwnerUserService(adminId, ownerId) {
   if (!user) throw new HttpError(404, "Không tìm thấy chủ sân");
 
   return { success: true };
+}
+
+
+
+
+const pickSafeUser = (u) => ({
+  _id: u._id,
+  fullName: u.fullName,
+  email: u.email,
+  phone: u.phone,
+  nickname: u.nickname,
+  gender: u.gender,
+  birthday: u.birthday,
+  address: u.address,
+  role: u.role,
+  isActive: u.isActive,
+  emailVerified: u.emailVerified,
+});
+
+export async function getMeService(userId) {
+  if (!userId) {
+    const err = new Error("Unauthorized");
+    err.statusCode = 401;
+    throw err;
+  }
+
+  const user = await User.findById(userId).lean();
+  if (!user) {
+    const err = new Error("User not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return pickSafeUser(user);
+}
+
+export async function updateMeService(userId, payload) {
+  if (!userId) {
+    const err = new Error("Unauthorized");
+    err.statusCode = 401;
+    throw err;
+  }
+
+  // allowlist field (tránh user tự patch role/emailVerified…)
+  const update = {};
+  if (typeof payload.fullName === "string") update.fullName = payload.fullName.trim();
+  if (typeof payload.phone === "string") update.phone = payload.phone.trim();
+  if (typeof payload.nickname === "string") update.nickname = payload.nickname.trim();
+  if (typeof payload.gender === "string") update.gender = payload.gender;
+  if (payload.birthday === null || typeof payload.birthday === "string") {
+    update.birthday = payload.birthday ? new Date(payload.birthday) : null;
+  }
+  if (typeof payload.address === "string") update.address = payload.address.trim();
+
+  const user = await User.findByIdAndUpdate(userId, update, { new: true }).lean();
+  if (!user) {
+    const err = new Error("User not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return pickSafeUser(user);
+}
+
+export async function changeMyPasswordService(userId, { currentPassword, newPassword }) {
+  if (!userId) {
+    const err = new Error("Unauthorized");
+    err.statusCode = 401;
+    throw err;
+  }
+  if (!currentPassword || !newPassword) {
+    const err = new Error("currentPassword and newPassword are required");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error("User not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const ok = await verifyPassword(currentPassword, user.passwordHash);
+  if (!ok) {
+    const err = new Error("Mật khẩu hiện tại không đúng");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  user.passwordHash = await hashPassword(newPassword);
+  await user.save();
 }

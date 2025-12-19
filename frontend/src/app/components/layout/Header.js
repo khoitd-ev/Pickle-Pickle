@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import NotificationBell from "@/app/components/notifications/NotificationBell";
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -134,12 +135,8 @@ export default function Header() {
             </button>
 
             {/* Bell */}
-            <button
-              type="button"
-              className="relative p-1.5 rounded-full hover:bg-[#04152c] transition-colors"
-            >
-              <Image src="/Bell.svg" alt="Thông báo" width={18} height={18} />
-            </button>
+            <NotificationBell compact />
+
 
             {/* Avatar + tên + role + logout */}
             <div className="flex items-center gap-3">
@@ -200,16 +197,9 @@ export default function Header() {
         <div className="pp-header__right">
           {isLoggedIn ? (
             <>
-              <button className="pp-header__icon-btn" type="button">
-                <Image
-                  src="/notificationIcon.svg"
-                  alt="Thông báo"
-                  width={20}
-                  height={20}
-                  className="pp-header__icon"
-                />
-                <span>Thông báo</span>
-              </button>
+            {/* thông báo */}
+              <NotificationBell showText />
+
 
               <button
                 className="pp-header__icon-btn"

@@ -3,7 +3,7 @@ import { Venue } from "../../models/venue.model.js";
 import { VenueOpenHour } from "../../models/venueOpenHour.model.js";
 import { PriceRule } from "../../models/priceRule.model.js";
 import { HttpError } from "../../shared/errors/httpError.js";
-
+import { Court } from "../../models/court.model.js";
 /**
  * Đảm bảo venue thuộc về owner đang login
  */
@@ -145,4 +145,97 @@ export async function upsertVenuePriceRules(ownerId, venueId, items) {
 
   const created = await PriceRule.insertMany(docs);
   return created;
+}
+
+
+// Chuẩn hoá số nguyên >= 1
+function normalizeCourtsCount(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n < 1) return null;
+  return n;
+}
+
+/**
+ * Update Venue.courtsCount + sync Court theo Venue
+ * - Không xoá cứng court dư (chỉ isActive=false) để tránh gãy booking cũ
+ * - Court active luôn được rename thành: "Sân 1..Sân N"
+ */
+export async function updateVenueCourtsCount(ownerId, venueId, courtsCountRaw) {
+  await assertOwnerVenue(ownerId, venueId);
+
+  const courtsCount = normalizeCourtsCount(courtsCountRaw);
+  if (courtsCount == null) {
+    throw new HttpError(
+      400,
+      "Số lượng sân con không hợp lệ (phải là số nguyên >= 1)."
+    );
+  }
+
+  // 1) Update Venue.courtsCount
+  const venue = await Venue.findById(venueId);
+  if (!venue) throw new HttpError(404, "Không tìm thấy sân.");
+  venue.courtsCount = courtsCount;
+  await venue.save();
+
+  // 2) Sync Court
+  const courts = await Court.find({ venue: venueId }).sort({ createdAt: 1 }).exec();
+
+  const active = courts.filter((c) => c.isActive !== false);
+  const inactive = courts.filter((c) => c.isActive === false);
+
+  // Nếu active > courtsCount => deactivate phần dư
+  if (active.length > courtsCount) {
+    const toDeactivate = active.slice(courtsCount);
+    await Court.updateMany(
+      { _id: { $in: toDeactivate.map((c) => c._id) } },
+      { $set: { isActive: false } }
+    );
+  }
+
+  // Nếu active < courtsCount => bật lại inactive trước, thiếu thì tạo mới
+  if (active.length < courtsCount) {
+    const need = courtsCount - active.length;
+
+    const canReactivate = inactive.slice(0, need);
+    if (canReactivate.length > 0) {
+      await Court.updateMany(
+        { _id: { $in: canReactivate.map((c) => c._id) } },
+        { $set: { isActive: true } }
+      );
+    }
+
+    const stillNeed = need - canReactivate.length;
+    if (stillNeed > 0) {
+      const currentActiveCount = await Court.countDocuments({
+        venue: venueId,
+        isActive: true,
+      });
+
+      const newDocs = [];
+      for (let i = 1; i <= stillNeed; i++) {
+        newDocs.push({
+          venue: venueId,
+          name: `Sân ${currentActiveCount + i}`,
+          isActive: true,
+        });
+      }
+      await Court.insertMany(newDocs);
+    }
+  }
+
+  // 3) Rename tất cả court active => "Sân 1..Sân N"
+  const finalActive = await Court.find({ venue: venueId, isActive: true })
+    .sort({ createdAt: 1 })
+    .exec();
+
+  const bulk = finalActive.map((c, idx) => ({
+    updateOne: {
+      filter: { _id: c._id },
+      update: { $set: { name: `Sân ${idx + 1}` } },
+    },
+  }));
+
+  if (bulk.length > 0) await Court.bulkWrite(bulk);
+
+  return { courtsCount };
 }

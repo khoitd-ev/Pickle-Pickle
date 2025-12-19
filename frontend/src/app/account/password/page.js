@@ -32,10 +32,10 @@ export default function PasswordPage() {
     try {
       await apiFetch("/users/me/password", {
         method: "PATCH",
-        body: JSON.stringify({
+        body: {
           currentPassword,
           newPassword,
-        }),
+        },
       });
 
       setSuccess("Đã đổi mật khẩu thành công");

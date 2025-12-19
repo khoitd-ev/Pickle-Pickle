@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 
 import BookingInfoSection from "../../../../components/courts/booking/BookingInfoSection";
@@ -13,10 +14,10 @@ const FALLBACK_VENUE = {
     address: "45 Lê Lợi, Quận 1, TP.HCM",
 };
 
-
 const USER_STORAGE_KEY = "pp_user";
 const TOKEN_STORAGE_KEYS = ["pp_token"];
 const PAYMENT_DRAFT_KEY = "pp_booking_payment_draft";
+
 
 
 export default function CourtBookingAddonsPage() {
@@ -26,7 +27,7 @@ export default function CourtBookingAddonsPage() {
 
     const courtId = params?.courtId;
     const dateFromQuery = searchParams.get("date"); // "24/11/2025"
-    const slotsRaw = searchParams.get("slots");     // "Sân 2-13:00,Sân 2-14:00,..."
+    const slotsRaw = searchParams.get("slots"); // "Sân 2-13:00,Sân 2-14:00,..."
 
     const [venueName, setVenueName] = useState(FALLBACK_VENUE.name);
     const [venueAddress, setVenueAddress] = useState(FALLBACK_VENUE.address);
@@ -41,10 +42,22 @@ export default function CourtBookingAddonsPage() {
         phone: "",
     });
 
+
+    const [draftFromStorage, setDraftFromStorage] = useState(null);
+
+    // addonsSummary chuẩn hóa: { items: [], total: number }
     const [addonsSummary, setAddonsSummary] = useState({
         items: [],
-        addonsTotal: 0,
-    });
+        total: 0,
+
+    }
+    );
+    const handleAddonsChange = useCallback((next) => {
+        const items = next?.items || [];
+        const total = Number(next?.total ?? next?.addonsTotal ?? 0) || 0;
+        setAddonsSummary({ items, total });
+    }, []);
+
 
     /* ===================== LẤY THÔNG TIN SÂN ===================== */
     useEffect(() => {
@@ -54,9 +67,7 @@ export default function CourtBookingAddonsPage() {
 
         (async () => {
             try {
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_BASE}/venues/${courtId}/detail`
-                );
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/venues/${courtId}/detail`);
                 if (!res.ok) return;
 
                 const json = await res.json();
@@ -76,13 +87,35 @@ export default function CourtBookingAddonsPage() {
         };
     }, [courtId]);
 
+    /* ===================== LOAD DRAFT ===================== */
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const raw = localStorage.getItem(PAYMENT_DRAFT_KEY);
+        if (!raw) return;
+
+        try {
+            const d = JSON.parse(raw);
+            setDraftFromStorage(d);
+
+            // Nếu draft trước đó đã có addons thì restore
+            if (d?.addons?.items?.length || typeof d?.addons?.total === "number") {
+                setAddonsSummary({
+                    items: d.addons?.items || [],
+                    total: Number(d.addons?.total || 0),
+                });
+            }
+        } catch (err) {
+            console.error("Cannot parse payment draft", err);
+        }
+    }, []);
+
     /* ===================== CHECK LOGIN TỪ LOCALSTORAGE ===================== */
     useEffect(() => {
         if (typeof window === "undefined") return;
 
         let parsedUser = null;
 
-        // 1. Lấy user từ pp_user
         const rawUser = localStorage.getItem(USER_STORAGE_KEY);
         if (rawUser) {
             try {
@@ -92,7 +125,6 @@ export default function CourtBookingAddonsPage() {
             }
         }
 
-        // 2. Kiểm tra có token pp_token không
         let hasToken = false;
         for (const key of TOKEN_STORAGE_KEYS) {
             if (localStorage.getItem(key)) {
@@ -105,20 +137,11 @@ export default function CourtBookingAddonsPage() {
             setIsAuth(true);
             setCurrentUser(parsedUser || {});
 
-            // Prefill luôn form guest nếu có sẵn thông tin
             setGuestInfo((prev) => ({
                 ...prev,
-                name:
-                    parsedUser?.fullName ||
-                    parsedUser?.name ||
-                    parsedUser?.username ||
-                    prev.name,
+                name: parsedUser?.fullName || parsedUser?.name || parsedUser?.username || prev.name,
                 email: parsedUser?.email || prev.email,
-                phone:
-                    parsedUser?.phone ||
-                    parsedUser?.phoneNumber ||
-                    parsedUser?.mobile ||
-                    prev.phone,
+                phone: parsedUser?.phone || parsedUser?.phoneNumber || parsedUser?.mobile || prev.phone,
             }));
         } else {
             setIsAuth(false);
@@ -128,24 +151,30 @@ export default function CourtBookingAddonsPage() {
         setLoadingUser(false);
     }, []);
 
-    /* ===================== BUILD BẢNG GIÁ & TỔNG TIỀN ===================== */
-    const { pricingDetails, totalCourtPrice } = buildPricingDetails(slotsRaw);
+    /* ===================== PRICING DETAILS ===================== */
+    // Ưu tiên lấy pricing từ draft (đúng theo giá API ở booking page),
+    // fallback sang parse slotsRaw nếu draft thiếu.
+    const fallbackPricing = buildPricingDetails(slotsRaw);
+
+    const pricingDetails = Array.isArray(draftFromStorage?.courtPricingDetails)
+        ? draftFromStorage.courtPricingDetails
+        : fallbackPricing.pricingDetails;
+
+    const totalCourtPrice =
+        typeof draftFromStorage?.courtTotal === "number" && draftFromStorage.courtTotal >= 0
+            ? draftFromStorage.courtTotal
+            : fallbackPricing.totalCourtPrice;
 
     const handleEdit = () => {
         router.push(`/courts/${courtId}/booking`);
     };
 
-    const displayDate = dateFromQuery || new Date().toLocaleDateString("vi-VN");
+    const displayDate = dateFromQuery || draftFromStorage?.displayDate || new Date().toLocaleDateString("vi-VN");
 
-    // Props dùng chung cho 2 phiên bản BookingInfo
     const bookingInfoCommon = {
         courtName: venueName,
         courtAddress: venueAddress,
-        phoneNumber:
-            currentUser?.phone ||
-            currentUser?.phoneNumber ||
-            guestInfo.phone ||
-            "",
+        phoneNumber: currentUser?.phone || currentUser?.phoneNumber || guestInfo.phone || "",
         date: displayDate,
         pricingDetails,
         totalCourtPrice,
@@ -159,7 +188,7 @@ export default function CourtBookingAddonsPage() {
 
         const raw = localStorage.getItem(PAYMENT_DRAFT_KEY);
         if (!raw) {
-            alert("Không tìm thấy thông tin booking. Vui lòng đặt sân lại.");
+            alert("Không tìm thấy thông tin đặt sân. Vui lòng đặt sân lại.");
             router.push(`/courts/${courtId}/booking`);
             return;
         }
@@ -175,13 +204,8 @@ export default function CourtBookingAddonsPage() {
             return;
         }
 
-        if (!existingDraft.bookingId) {
-            alert("Không tìm thấy bookingId. Vui lòng đặt lại sân.");
-            router.push(`/courts/${courtId}/booking`);
-            return;
-        }
 
-        // Gộp thông tin khách hàng cho bước payment/invoice
+
         const customer =
             isAuth && currentUser
                 ? {
@@ -193,11 +217,7 @@ export default function CourtBookingAddonsPage() {
                         currentUser.email ||
                         "Khách hàng",
                     email: currentUser.email || "",
-                    phone:
-                        currentUser.phone ||
-                        currentUser.phoneNumber ||
-                        currentUser.mobile ||
-                        "",
+                    phone: currentUser.phone || currentUser.phoneNumber || currentUser.mobile || "",
                 }
                 : {
                     type: "guest",
@@ -206,15 +226,21 @@ export default function CourtBookingAddonsPage() {
                     phone: guestInfo.phone,
                 };
 
+        // Chuẩn hóa addonsSummary về {items,total}
+        const normalizedAddons = {
+            items: addonsSummary?.items || [],
+            total: Number(addonsSummary?.total || 0),
+        };
+
         const updatedDraft = {
-            ...existingDraft, // GIỮ bookingId, courtTotal cũ nếu có
+            ...existingDraft, // giữ venueId/date/courtsPayload/courtTotal...
             courtId,
-            date: displayDate,
+            displayDate,
             courtName: venueName,
             courtAddress: venueAddress,
             courtPricingDetails: pricingDetails,
             courtTotal: totalCourtPrice,
-            addons: addonsSummary,
+            addons: normalizedAddons,
             customer,
         };
 
@@ -222,17 +248,13 @@ export default function CourtBookingAddonsPage() {
         router.push(`/courts/${courtId}/booking/payment`);
     };
 
-
-
     return (
         <main className="min-h-screen bg-white">
             <section className="mx-auto max-w-6xl px-4 py-10 space-y-10">
                 {/* SECTION 1: Info + chi tiết giá */}
                 {loadingUser ? (
                     <div className="rounded-3xl border border-zinc-200 bg-white px-6 py-6 md:px-10 md:py-8">
-                        <p className="text-sm text-zinc-500">
-                            Đang tải thông tin khách hàng...
-                        </p>
+                        <p className="text-sm text-zinc-500">Đang tải thông tin khách hàng...</p>
                     </div>
                 ) : isAuth && currentUser ? (
                     <BookingInfoSection
@@ -244,25 +266,22 @@ export default function CourtBookingAddonsPage() {
                                 currentUser.email ||
                                 "Khách hàng",
                             email: currentUser.email || "",
-                            avatarUrl:
-                                currentUser.avatarUrl ||
-                                currentUser.avatar ||
-                                "/courts/Logo.svg",
+                            avatarUrl: currentUser.avatarUrl || currentUser.avatar || "/courts/Logo.svg",
                         }}
                         {...bookingInfoCommon}
                     />
                 ) : (
-                    <BookingInfoGuestSection
-                        guestInfo={guestInfo}
-                        onChangeGuestInfo={handleGuestInfoChange}
-                        {...bookingInfoCommon}
-                    />
+                    <BookingInfoGuestSection guestInfo={guestInfo} onChangeGuestInfo={handleGuestInfoChange} {...bookingInfoCommon} />
                 )}
 
                 {/* SECTION 2: Dịch vụ thêm */}
-                <AddonsSection venueId={courtId} onChange={setAddonsSummary} />
+                {/*  onChange từ AddonsSection có thể trả {items, addonsTotal} hoặc {items,total} => normalize */}
+                <AddonsSection
+                    venueId={courtId}
+                    onChange={handleAddonsChange}
+                />
 
-                {/* Nút tiếp tục */}
+
                 <div className="flex justify-end">
                     <button
                         type="button"
@@ -277,7 +296,7 @@ export default function CourtBookingAddonsPage() {
     );
 }
 
-/* ===================== Helpers: slots -> rows & total ===================== */
+/* ===================== Fallback Helpers (chỉ dùng nếu draft thiếu) ===================== */
 
 function buildPricingDetails(slotsRaw) {
     if (!slotsRaw) {
@@ -317,6 +336,7 @@ function buildPricingDetails(slotsRaw) {
 
         const flushSegment = (segmentStart, segmentEnd) => {
             const hoursCount = segmentEnd - segmentStart + 1;
+            // fallback giá demo
             const pricePerHour = getPriceForHour(segmentStart);
             const totalPrice = pricePerHour * hoursCount;
             totalCourtPrice += totalPrice;
@@ -351,5 +371,3 @@ function getPriceForHour(hour) {
     if (hour >= 16 && hour < 23) return 150000;
     return 120000;
 }
-
-

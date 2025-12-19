@@ -31,6 +31,8 @@ export async function createBookingHandler(request, reply) {
       courts: body.courts,
       discount: body.discount,
       note: body.note,
+      addons: body.addons, 
+      addonsTotal: Number(body.addonsTotal || 0),
     };
 
     const result = await createBookingFromSlots(payload);

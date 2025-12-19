@@ -89,6 +89,9 @@ export default function AdminBookingsPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  //  Force reload key cho nút "Làm mới"
+  const [refreshKey, setRefreshKey] = useState(0);
+
   // Set ngày ở client
   useEffect(() => {
     if (!currentDate) {
@@ -97,9 +100,15 @@ export default function AdminBookingsPage() {
   }, [currentDate]);
 
   const dateParam = currentDate ? formatDateYMDLocal(currentDate) : "";
-  const displayDate = currentDate
-    ? currentDate.toLocaleDateString("vi-VN")
-    : "";
+  const displayDate = currentDate ? currentDate.toLocaleDateString("vi-VN") : "";
+
+  //  Handler refresh: reset filter + ép gọi lại API
+  const handleRefresh = () => {
+    setErrorMsg("");
+    setSearch("");
+    setStatusFilter("all");
+    setRefreshKey((k) => k + 1);
+  };
 
   // ====== Load danh sách CHỦ SÂN + VENUE (dùng chung với dashboard admin) ======
   useEffect(() => {
@@ -125,17 +134,30 @@ export default function AdminBookingsPage() {
 
         setOwners(mappedOwners);
 
-        if (mappedOwners.length) {
-          const firstOwner = mappedOwners[0];
-          setSelectedOwnerId(firstOwner.id);
+        //  giữ selection cũ nếu còn, không thì lấy cái đầu
+        let ownerIdToUse = selectedOwnerId;
+        const ownerStillExists = mappedOwners.some(
+          (x) => String(x.id) === String(ownerIdToUse)
+        );
+        if (!ownerStillExists) {
+          ownerIdToUse = mappedOwners.length ? mappedOwners[0].id : "";
+          setSelectedOwnerId(ownerIdToUse);
+        }
 
-          const ownerVenues = firstOwner.venues || [];
-          setVenues(ownerVenues);
+        const ownerObj = mappedOwners.find(
+          (x) => String(x.id) === String(ownerIdToUse)
+        );
+        const ownerVenues = ownerObj?.venues || [];
+        setVenues(ownerVenues);
 
-          if (ownerVenues.length) {
-            const firstVenue = ownerVenues[0];
-            setSelectedVenueId(firstVenue.id || firstVenue._id);
-          }
+        let venueIdToUse = selectedVenueId;
+        const venueStillExists = ownerVenues.some(
+          (v) => String(v.id || v._id) === String(venueIdToUse)
+        );
+        if (!venueStillExists) {
+          venueIdToUse =
+            ownerVenues.length ? ownerVenues[0].id || ownerVenues[0]._id : "";
+          setSelectedVenueId(venueIdToUse);
         }
       } catch (err) {
         console.error("Load owners error:", err);
@@ -149,7 +171,8 @@ export default function AdminBookingsPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+    //  bấm "Làm mới" cũng reload owners/venues
+  }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Khi đổi chủ sân -> cập nhật lại danh sách sân
   useEffect(() => {
@@ -159,20 +182,22 @@ export default function AdminBookingsPage() {
       return;
     }
 
-    const owner = owners.find(
-      (o) => String(o.id) === String(selectedOwnerId)
-    );
+    const owner = owners.find((o) => String(o.id) === String(selectedOwnerId));
 
     const vs = owner?.venues || [];
     setVenues(vs);
 
+    //  giữ venue nếu còn, không thì lấy venue đầu
     if (vs.length) {
-      const v = vs[0];
-      setSelectedVenueId(v.id || v._id);
+      const still = vs.some((v) => String(v.id || v._id) === String(selectedVenueId));
+      if (!still) {
+        const v = vs[0];
+        setSelectedVenueId(v.id || v._id);
+      }
     } else {
       setSelectedVenueId("");
     }
-  }, [selectedOwnerId, owners]);
+  }, [selectedOwnerId, owners]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ====== Load bookings + availability theo venue + ngày (có polling) ======
   useEffect(() => {
@@ -248,13 +273,14 @@ export default function AdminBookingsPage() {
       ignore = true;
       clearInterval(intervalId);
     };
-  }, [dateParam, selectedVenueId]);
+
+    // refreshKey để bấm nút "Làm mới" gọi lại API ngay
+  }, [dateParam, selectedVenueId, refreshKey]);
 
   // Filter bookings theo trạng thái + search
   const filteredBookings = useMemo(() => {
     return bookings.filter((b) => {
-      const matchStatus =
-        statusFilter === "all" ? true : b.status === statusFilter;
+      const matchStatus = statusFilter === "all" ? true : b.status === statusFilter;
 
       const searchText = search.trim().toLowerCase();
       const matchSearch =
@@ -314,12 +340,9 @@ export default function AdminBookingsPage() {
             Quản lý đặt sân (Admin)
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Theo dõi tình trạng đặt sân trong ngày và chi tiết các lượt đặt
-            theo từng chủ sân và sân.
+            Theo dõi tình trạng đặt sân trong ngày và chi tiết các lượt đặt theo từng chủ sân và sân.
           </p>
-          {errorMsg && (
-            <p className="mt-1 text-xs text-red-500">{errorMsg}</p>
-          )}
+          {errorMsg && <p className="mt-1 text-xs text-red-500">{errorMsg}</p>}
         </div>
 
         <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -343,9 +366,7 @@ export default function AdminBookingsPage() {
               className="px-2.5 py-1.5 rounded border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-xs md:text-sm text-black min-w-[180px]"
             >
               {ownersLoading && <option>Đang tải...</option>}
-              {!ownersLoading && owners.length === 0 && (
-                <option>Chưa có chủ sân nào</option>
-              )}
+              {!ownersLoading && owners.length === 0 && <option>Chưa có chủ sân nào</option>}
               {!ownersLoading &&
                 owners.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -363,9 +384,7 @@ export default function AdminBookingsPage() {
               onChange={(e) => setSelectedVenueId(e.target.value)}
               className="px-2.5 py-1.5 rounded border border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-xs md:text-sm text-black min-w-[180px]"
             >
-              {venues.length === 0 && (
-                <option>Chủ sân này chưa có sân nào</option>
-              )}
+              {venues.length === 0 && <option>Chủ sân này chưa có sân nào</option>}
               {venues.map((v) => (
                 <option key={v.id || v._id} value={v.id || v._id}>
                   {v.name}
@@ -377,11 +396,7 @@ export default function AdminBookingsPage() {
           {/* Làm mới */}
           <button
             type="button"
-            onClick={() => {
-              setSearch("");
-              setStatusFilter("all");
-              if (currentDate) setCurrentDate(new Date(currentDate));
-            }}
+            onClick={handleRefresh}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded border border-gray-200 text-black bg-white hover:bg-gray-50"
           >
             <span className="text-base leading-none">⟳</span>
@@ -393,14 +408,7 @@ export default function AdminBookingsPage() {
       {/* CARD: SÂN TRONG NGÀY (GIỐNG OWNER) */}
       <section className="bg-white rounded-xl shadow-sm border border-gray-100 px-6 py-5 space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">
-            Chi tiết sân trong ngày
-          </h2>
-          <p className="text-xs text-gray-500">
-            {loading
-              ? "Đang tải dữ liệu..."
-              : "Khung giờ hiển thị: 05:00 – 22:00"}
-          </p>
+          <h2 className="text-sm font-semibold text-gray-900">Chi tiết sân trong ngày</h2>
         </div>
 
         <div className="rounded-3xl bg-[#f7f7f7] border border-[#e5e5e5] px-6 py-6 space-y-5">
@@ -411,12 +419,7 @@ export default function AdminBookingsPage() {
               onClick={handlePrevDate}
               className="flex items-center justify-center cursor-pointer transition hover:opacity-80 hover:scale-110"
             >
-              <Image
-                src="/courts/prevIcon1.svg"
-                alt="Ngày trước"
-                width={20}
-                height={20}
-              />
+              <Image src="/courts/prevIcon1.svg" alt="Ngày trước" width={20} height={20} />
             </button>
 
             <span>{displayDate}</span>
@@ -426,21 +429,13 @@ export default function AdminBookingsPage() {
               onClick={handleNextDate}
               className="flex items-center justify-center cursor-pointer transition hover:opacity-80 hover:scale-110"
             >
-              <Image
-                src="/courts/nextIcon1.svg"
-                alt="Ngày sau"
-                width={20}
-                height={20}
-              />
+              <Image src="/courts/nextIcon1.svg" alt="Ngày sau" width={20} height={20} />
             </button>
           </div>
 
           {/* LEGEND */}
           <div className="flex items-center justify-center gap-6 text-sm text-black">
-            <LegendItem
-              colorClass="bg-white border border-[#dcdcdc]"
-              label="Trống"
-            />
+            <LegendItem colorClass="bg-white border border-[#dcdcdc]" label="Trống" />
             <LegendItem colorClass="bg-[#ffe94d]" label="Đã đặt / Khóa" />
           </div>
 
@@ -475,9 +470,7 @@ export default function AdminBookingsPage() {
                             key={`${court.id}-${hour}`}
                             className="h-7 rounded-[6px] border border-[#dcdcdc] transition"
                             style={{
-                              backgroundColor: booked
-                                ? "#ffe94d"
-                                : "#ffffff",
+                              backgroundColor: booked ? "#ffe94d" : "#ffffff",
                             }}
                           />
                         );
@@ -489,8 +482,7 @@ export default function AdminBookingsPage() {
             </div>
 
             <p className="mt-3 text-[11px] text-gray-500">
-              Ô màu vàng thể hiện khung giờ đã được đặt trong ngày{" "}
-              {displayDate || "..."}.
+              Ô màu vàng thể hiện khung giờ đã được đặt trong ngày {displayDate || "..."}.
             </p>
           </div>
         </div>
@@ -520,12 +512,7 @@ export default function AdminBookingsPage() {
           <div className="flex items-center gap-2 w-full md:w-auto">
             <div className="relative flex-1 md:flex-none">
               <span className="absolute left-2 top-1/2 -translate-y-1/2">
-                <Image
-                  src="/searchIcon1.svg"
-                  alt="Tìm kiếm"
-                  width={14}
-                  height={14}
-                />
+                <Image src="/searchIcon1.svg" alt="Tìm kiếm" width={14} height={14} />
               </span>
               <input
                 type="text"
@@ -575,21 +562,14 @@ export default function AdminBookingsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td
-                    colSpan={9}
-                    className="px-4 py-4 text-center text-gray-500 text-sm"
-                  >
+                  <td colSpan={9} className="px-4 py-4 text-center text-gray-500 text-sm">
                     Đang tải dữ liệu...
                   </td>
                 </tr>
               ) : filteredBookings.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={9}
-                    className="px-4 py-4 text-center text-gray-500 text-sm"
-                  >
-                    Không có lượt đặt sân nào phù hợp trong ngày{" "}
-                    {displayDate || "..."}.
+                  <td colSpan={9} className="px-4 py-4 text-center text-gray-500 text-sm">
+                    Không có lượt đặt sân nào phù hợp trong ngày {displayDate || "..."}.
                   </td>
                 </tr>
               ) : (
@@ -598,9 +578,7 @@ export default function AdminBookingsPage() {
                     key={b.id}
                     className={index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}
                   >
-                    <td className="px-4 py-2 border-b border-gray-50">
-                      {index + 1}
-                    </td>
+                    <td className="px-4 py-2 border-b border-gray-50">{index + 1}</td>
                     <td className="px-4 py-2 border-b border-gray-50 text-gray-800">
                       {b.code}
                     </td>
@@ -635,9 +613,7 @@ export default function AdminBookingsPage() {
         <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
           <p>
             Tổng số lượt đặt:{" "}
-            <span className="font-medium text-gray-700">
-              {filteredBookings.length}
-            </span>
+            <span className="font-medium text-gray-700">{filteredBookings.length}</span>
           </p>
         </div>
       </section>

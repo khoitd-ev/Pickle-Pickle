@@ -12,6 +12,23 @@ const GENDER_OPTIONS = [
   { value: "other", label: "Khác" },
 ];
 
+
+function syncLocalUser(nextUser) {
+  if (typeof window === "undefined") return;
+
+  const current = JSON.parse(localStorage.getItem("pp_user") || "{}");
+
+  const merged = {
+    ...current,        // GIỮ role, token, flags
+    ...nextUser,       // cập nhật profile
+    role: current.role // ÉP GIỮ ROLE
+  };
+
+  localStorage.setItem("pp_user", JSON.stringify(merged));
+  window.dispatchEvent(new Event("pp-auth-changed"));
+}
+
+
 export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -46,8 +63,8 @@ export default function ProfilePage() {
 
         if (typeof window !== "undefined") {
           const current = JSON.parse(localStorage.getItem("pp_user") || "{}");
-          const merged = { ...current, ...data.user };
-          localStorage.setItem("pp_user", JSON.stringify(merged));
+          syncLocalUser(data.user);
+
           window.dispatchEvent(new Event("pp-auth-changed"));
         }
       } catch {
@@ -98,12 +115,13 @@ export default function ProfilePage() {
 
       const data = await apiFetch("/users/me", {
         method: "PATCH",
-        body: JSON.stringify(payload),
+        body: payload,
       });
 
       if (typeof window !== "undefined") {
-        const merged = { ...(data.user || payload), email: profile.email };
-        localStorage.setItem("pp_user", JSON.stringify(merged));
+        syncLocalUser(data.user || payload);
+        setEditMode(false);
+
         window.dispatchEvent(new Event("pp-auth-changed"));
       }
 

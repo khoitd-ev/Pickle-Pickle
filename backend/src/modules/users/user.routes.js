@@ -13,6 +13,9 @@ import {
     createOwnerHandler,
     updateOwnerHandler,
     deleteOwnerHandler,
+    getMeHandler,
+    updateMeHandler,
+    changeMyPasswordHandler,
 } from "./user.controller.js";
 
 
@@ -199,6 +202,9 @@ export default async function userRoutes(app, opts) {
         { preHandler: [requireAuth] },
         deleteOwnerHandler
     );
+    app.get("/users/me", getMeHandler);
+    app.patch("/users/me", updateMeHandler);
+    app.patch("/users/me/password", changeMyPasswordHandler);
 }
 
 

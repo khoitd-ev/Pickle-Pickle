@@ -205,7 +205,7 @@ export default function SidebarNav() {
                     transform: "translateY(-50%)",
                     right: "-12px",
                     left: "auto",
-                    zIndex: 50,
+                    zIndex: 30,
                 }}
             >
                 {collapsed ? "›" : "‹"}

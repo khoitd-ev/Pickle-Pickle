@@ -36,7 +36,7 @@ export default function RootLayout({ children }) {
       className={`${geistSans.variable} ${geistMono.variable} ${pickleFont.variable}`}
     >
       <body className="bg-black text-white min-h-screen flex flex-col">
-        {/* LayoutClient sẽ quyết định có render Header public hay không */}
+        
         <LayoutClient>{children}</LayoutClient>
       </body>
     </html>

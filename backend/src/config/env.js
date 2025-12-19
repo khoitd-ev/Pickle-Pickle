@@ -16,6 +16,9 @@ export const config = {
 
   // API
   apiPrefix: process.env.API_PREFIX || "/api",
+  
+  // Google OAuth
+  googleClientId: process.env.GOOGLE_CLIENT_ID,
 
   // Email
   emailHost: process.env.EMAIL_HOST,

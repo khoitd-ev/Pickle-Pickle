@@ -12,6 +12,7 @@ const venueSchema = new Schema(
     timeZone: { type: String, default: "Asia/Ho_Chi_Minh" },
     slotMinutes: { type: Number, default: 60 },
     isActive: { type: Boolean, default: true },
+    courtsCount: { type: Number, default: 1, min: 1 },
 
     manager: { type: Schema.Types.ObjectId, ref: "User" }, // owner chính
 

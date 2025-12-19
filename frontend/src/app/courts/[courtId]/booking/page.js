@@ -36,8 +36,7 @@ export default function CourtBookingTimePage() {
         }
 
         const json = await res.json();
-        const nameFromApi =
-          json.data?.court?.name || json.data?.name || "";
+        const nameFromApi = json.data?.court?.name || json.data?.name || "";
 
         if (!cancelled && nameFromApi) {
           setVenueName(nameFromApi);
@@ -104,9 +103,7 @@ export default function CourtBookingTimePage() {
             });
           });
 
-          setSelectedSlots((prev) =>
-            prev.filter((key) => availableKeySet.has(key))
-          );
+          setSelectedSlots((prev) => prev.filter((key) => availableKeySet.has(key)));
         }
       } catch (err) {
         console.error(err);
@@ -144,13 +141,9 @@ export default function CourtBookingTimePage() {
   };
 
   const hasAvailability =
-    availability &&
-    Array.isArray(availability.courts) &&
-    availability.courts.length > 0;
+    availability && Array.isArray(availability.courts) && availability.courts.length > 0;
 
-  const headerSlots = hasAvailability
-    ? availability.courts[0].slots || []
-    : [];
+  const headerSlots = hasAvailability ? availability.courts[0].slots || [] : [];
   const HOURS =
     headerSlots.length > 0
       ? headerSlots.map((s) => (s.timeFrom || "").slice(0, 5))
@@ -202,28 +195,77 @@ export default function CourtBookingTimePage() {
     const slot = courtsRows[rowIndex].slots?.[colIndex];
     if (!slot) return 0;
 
-    const price =
-      slot.pricePerHour ??
-      slot.walkinPrice ??
-      slot.fixedPrice ??
-      0;
-
+    const price = slot.pricePerHour ?? slot.walkinPrice ?? slot.fixedPrice ?? 0;
     return typeof price === "number" ? price : 0;
   };
 
-  const totalPrice = selectedSlots.reduce(
-    (sum, key) => sum + getSlotPriceByKey(key),
-    0
-  );
+  const totalPrice = selectedSlots.reduce((sum, key) => sum + getSlotPriceByKey(key), 0);
 
-  // ===== SUBMIT =====
+  // ===== Helper build pricingDetails từ selectedSlots + giá thực tế =====
+  const buildPricingDetailsFromSelection = (slots) => {
+    if (!slots?.length) return [];
+
+    // parse key "Sân 2-13:00" => {courtLabel, hour}
+    const parsed = slots
+      .map((key) => {
+        const [courtLabel, timeStr] = key.split("-");
+        const hour = parseInt(String(timeStr || "").slice(0, 2), 10);
+        return { courtLabel, hour, key };
+      })
+      .filter((x) => x.courtLabel && Number.isFinite(x.hour));
+
+    const byCourt = {};
+    parsed.forEach((x) => {
+      if (!byCourt[x.courtLabel]) byCourt[x.courtLabel] = [];
+      byCourt[x.courtLabel].push(x);
+    });
+
+    const pad = (h) => h.toString().padStart(2, "0") + ":00";
+    const details = [];
+
+    Object.entries(byCourt).forEach(([courtLabel, arr]) => {
+      const sorted = [...arr].sort((a, b) => a.hour - b.hour);
+
+      let segStart = sorted[0].hour;
+      let prev = sorted[0].hour;
+      let segTotal = getSlotPriceByKey(`${courtLabel}-${pad(sorted[0].hour).slice(0, 5)}`);
+
+      const flush = (startHour, endHour, totalPrice) => {
+        details.push({
+          id: `${courtLabel}-${startHour}`,
+          courtLabel,
+          timeRange: `${pad(startHour)} - ${pad(endHour + 1)}`,
+          totalPrice,
+        });
+      };
+
+      for (let i = 1; i < sorted.length; i++) {
+        const h = sorted[i].hour;
+        const price = getSlotPriceByKey(`${courtLabel}-${pad(h).slice(0, 5)}`);
+
+        if (h === prev + 1) {
+          prev = h;
+          segTotal += price;
+        } else {
+          flush(segStart, prev, segTotal);
+          segStart = h;
+          prev = h;
+          segTotal = price;
+        }
+      }
+
+      flush(segStart, prev, segTotal);
+    });
+
+    return details;
+  };
+
+  // ===== SUBMIT: LƯU DRAFT, KHÔNG TẠO BOOKING =====
   const handleSubmit = async () => {
     if (selectedSlots.length === 0) return;
 
     let token = null;
-    if (typeof window !== "undefined") {
-      token = localStorage.getItem(TOKEN_STORAGE_KEY);
-    }
+    if (typeof window !== "undefined") token = localStorage.getItem(TOKEN_STORAGE_KEY);
 
     console.log("pp_token in booking page =", token);
 
@@ -234,7 +276,7 @@ export default function CourtBookingTimePage() {
     }
 
     if (!availability || !Array.isArray(availability.courts)) {
-      alert("Không có dữ liệu sân để tạo booking. Vui lòng tải lại trang.");
+      alert("Không có dữ liệu sân để tạo booking draft. Vui lòng tải lại trang.");
       return;
     }
 
@@ -246,8 +288,7 @@ export default function CourtBookingTimePage() {
       const slots = court.slots || [];
 
       slots.forEach((slot, slotIdx) => {
-        const hour =
-          HOURS[slotIdx] || (slot.timeFrom || "").slice(0, 5);
+        const hour = HOURS[slotIdx] || (slot.timeFrom || "").slice(0, 5);
         const key = `${label}-${hour}`;
 
         slotMap.set(key, {
@@ -264,82 +305,45 @@ export default function CourtBookingTimePage() {
       const info = slotMap.get(key);
       if (!info) return;
 
-      const { courtId, slotIndex } = info;
-      if (!courtsById.has(courtId)) {
-        courtsById.set(courtId, []);
-      }
-      courtsById.get(courtId).push(slotIndex);
+      const { courtId: cid, slotIndex } = info;
+      if (!courtsById.has(cid)) courtsById.set(cid, []);
+      courtsById.get(cid).push(slotIndex);
     });
 
-    const courtsPayload = Array.from(courtsById.entries()).map(
-      ([cid, indices]) => ({
-        courtId: cid,
-        slotIndices: Array.from(new Set(indices)).sort((a, b) => a - b),
-      })
-    );
+    const courtsPayload = Array.from(courtsById.entries()).map(([cid, indices]) => ({
+      courtId: cid,
+      slotIndices: Array.from(new Set(indices)).sort((a, b) => a - b),
+    }));
 
     if (courtsPayload.length === 0) {
-      alert("Không tìm thấy slot hợp lệ để tạo booking.");
+      alert("Không tìm thấy slot hợp lệ để tạo booking draft.");
       return;
     }
 
-    console.log("courtsPayload gửi backend =", courtsPayload);
+    const pricingDetails = buildPricingDetailsFromSelection(selectedSlots);
 
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE}/bookings`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            venueId: courtId,
-            date: dateParam,
-            courts: courtsPayload,
-          }),
-        }
-      );
+    // Draft chuẩn để addons/payment dùng lại
+    const draft = {
+      venueId: courtId,
+      date: dateParam, // YYYY-MM-DD
+      displayDate, // DD/MM/YYYY (để show)
+      selectedSlots, // để addons page có thể hiển thị / fallback
+      courtsPayload, // payload thật để tạo booking sau
+      courtPricingDetails: pricingDetails,
+      courtTotal: totalPrice,
+      addons: { items: [], total: 0 },
+    };
 
-      const json = await res.json();
-      console.log("Create booking response", res.status, json);
-
-      if (!res.ok) {
-        alert(json?.message || "Không thể tạo booking. Vui lòng thử lại.");
-        return;
-      }
-
-      const bookingId =
-        json.data?.booking?._id ||
-        json.data?.bookingId ||
-        json.bookingId ||
-        json._id;
-
-      if (!bookingId) {
-        alert("Không lấy được mã booking. Vui lòng thử lại.");
-        return;
-      }
-
-      if (typeof window !== "undefined") {
-        const draft = {
-          bookingId,
-          courtTotal: totalPrice,
-          addons: { items: [] },
-        };
-        localStorage.setItem(PAYMENT_DRAFT_KEY, JSON.stringify(draft));
-      }
-
-      const slotsParam = selectedSlots.join(",");
-      router.push(
-        `/courts/${courtId}/booking/addons?date=${encodeURIComponent(
-          displayDate
-        )}&slots=${encodeURIComponent(slotsParam)}`
-      );
-    } catch (err) {
-      console.error("Error creating booking", err);
-      alert("Có lỗi khi tạo booking. Vui lòng thử lại.");
+    if (typeof window !== "undefined") {
+      localStorage.setItem(PAYMENT_DRAFT_KEY, JSON.stringify(draft));
     }
+
+    const slotsParam = selectedSlots.join(",");
+    router.push(
+      `/courts/${courtId}/booking/addons?date=${encodeURIComponent(displayDate)}&slots=${encodeURIComponent(
+        slotsParam
+      )}`
+    );
   };
 
   const titleVenue = venueName || "PicklePickle";
@@ -351,14 +355,8 @@ export default function CourtBookingTimePage() {
           Tình trạng đặt sân {titleVenue}
         </h1>
 
-        {loadingAvail && (
-          <p className="text-center text-xs text-zinc-500">
-            Đang tải tình trạng sân...
-          </p>
-        )}
-        {errorAvail && (
-          <p className="text-center text-xs text-red-500">{errorAvail}</p>
-        )}
+        {loadingAvail && <p className="text-center text-xs text-zinc-500">Đang tải tình trạng sân...</p>}
+        {errorAvail && <p className="text-center text-xs text-red-500">{errorAvail}</p>}
 
         <div className="rounded-3xl bg-[#f7f7f7] border border-[#e5e5e5] px-6 py-7 md:px-10 md:py-8 space-y-6">
           {/* DATE + ARROWS */}
@@ -368,12 +366,7 @@ export default function CourtBookingTimePage() {
               onClick={handlePrevDate}
               className="flex items-center justify-center cursor-pointer transition hover:opacity-80 hover:scale-110"
             >
-              <Image
-                src="/courts/prevIcon1.svg"
-                alt="Ngày trước"
-                width={20}
-                height={20}
-              />
+              <Image src="/courts/prevIcon1.svg" alt="Ngày trước" width={20} height={20} />
             </button>
 
             <span>{displayDate}</span>
@@ -383,21 +376,13 @@ export default function CourtBookingTimePage() {
               onClick={handleNextDate}
               className="flex items-center justify-center cursor-pointer transition hover:opacity-80 hover:scale-110"
             >
-              <Image
-                src="/courts/nextIcon1.svg"
-                alt="Ngày sau"
-                width={20}
-                height={20}
-              />
+              <Image src="/courts/nextIcon1.svg" alt="Ngày sau" width={20} height={20} />
             </button>
           </div>
 
           {/* LEGEND */}
           <div className="flex items-center justify-center gap-6 text-sm text-black">
-            <LegendItem
-              colorClass="bg-white border border-[#dcdcdc]"
-              label="Trống"
-            />
+            <LegendItem colorClass="bg-white border border-[#dcdcdc]" label="Trống" />
             <LegendItem colorClass="bg-[#ffe94d]" label="Đã đặt / Khóa" />
             <LegendItem colorClass="bg-[#7fd321]" label="Đang chọn" />
           </div>
@@ -419,17 +404,14 @@ export default function CourtBookingTimePage() {
                       key={row.label}
                       className="grid grid-cols-[90px_repeat(18,minmax(0,1fr))] gap-1 items-center"
                     >
-                      <div className="text-[13px] font-medium text-left text-black">
-                        {row.label}
-                      </div>
+                      <div className="text-[13px] font-medium text-left text-black">{row.label}</div>
 
                       {HOURS.map((hour, colIndex) => {
                         const key = `${row.label}-${hour}`;
                         const slot = row.slots?.[colIndex];
                         const status = slot?.status ?? "available";
 
-                        const isBooked =
-                          status === "booked" || status === "blackout";
+                        const isBooked = status === "booked" || status === "blackout";
                         const isSelected = selectedSlots.includes(key);
 
                         let bg = "bg-white";
@@ -455,8 +437,7 @@ export default function CourtBookingTimePage() {
             </div>
 
             <div className="mt-4 flex justify-end text-sm md:text-base font-semibold text-black">
-              Tổng tiền:&nbsp;
-              <span>{totalPrice.toLocaleString("vi-VN")} đ</span>
+              Tổng tiền:&nbsp;<span>{totalPrice.toLocaleString("vi-VN")} đ</span>
             </div>
           </div>
 

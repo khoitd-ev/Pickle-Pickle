@@ -12,6 +12,14 @@ const userSchema = new Schema(
     },
     fullName: { type: String, trim: true },
     phone: { type: String, trim: true },
+    nickname: { type: String, trim: true, default: "" },
+    gender: {
+      type: String,
+      enum: ["unknown", "male", "female", "other"],
+      default: "unknown",
+    },
+    birthday: { type: Date, default: null },
+    address: { type: String, trim: true, default: "" },
 
     isActive: { type: Boolean, default: true },
 

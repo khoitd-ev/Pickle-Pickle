@@ -1,16 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
 function resolveImageUrl(raw) {
-  if (!raw) return "";
-  if (typeof raw !== "string") return "";
+  if (!raw) return "/courts/sample1.png";
+  if (typeof raw !== "string") return "/courts/sample1.png";
+
+  // ảnh từ backend: /uploads/...
   if (raw.startsWith("/uploads/")) {
     return `${API_BASE}${raw}`;
   }
+
+  // ảnh trong public: /courts/..., /search/...
   return raw;
 }
 
@@ -26,33 +29,23 @@ export default function CourtCard({ court }) {
     timeRange,
     price,
     image,
-  } = court || {};
+  } = court;
 
   const handleViewDetail = () => {
     if (!id) return;
     router.push(`/courts/${id}`);
   };
 
-  // ===== Logic hiển thị (fallback từ dữ liệu thật) =====
-  const displayImage =
-    resolveImageUrl(image) || "/courts/sample1.png";
-
-  const displayPhone = phone || "Đang cập nhật";
-  const displayAddress = address || "Địa chỉ đang cập nhật";
-  const displayTimeRange = timeRange || "05:00–23:00";
-  const displayPrice =
-    price && price.length > 0 ? price : "Giá đang cập nhật";
+  const displayImage = resolveImageUrl(image);
 
   return (
     <article className="group flex gap-4 rounded-2xl border border-zinc-200 bg-zinc-100 p-4 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md">
       {/* Ảnh sân */}
       <div className="relative h-[140px] w-[190px] overflow-hidden rounded-xl">
-        <Image
+        <img
           src={displayImage}
           alt={name}
-          fill
-          className="object-cover"
-          sizes="190px"
+          className="h-full w-full object-cover"
         />
       </div>
 
@@ -70,11 +63,10 @@ export default function CourtCard({ court }) {
                 type="button"
                 className="mt-[2px] rounded-full p-1 hover:bg-zinc-200"
               >
-                <Image
+                <img
                   src="/search/heartIcon.svg"
                   alt="Yêu thích"
-                  width={16}
-                  height={16}
+                  className="h-4 w-4"
                 />
               </button>
             </div>
@@ -96,39 +88,36 @@ export default function CourtCard({ court }) {
           {/* Liên hệ + địa chỉ */}
           <div className="mt-2 space-y-1.5">
             <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-800">
-              <Image
+              <img
                 src="/search/whatsappIcon.svg"
                 alt="Phone"
-                width={12}
-                height={12}
+                className="h-3 w-3"
               />
-              <span>Liên hệ: {displayPhone}</span>
+              <span>Liên hệ: {phone}</span>
             </div>
 
             <p className="text-[11px] text-zinc-600 leading-snug">
-              {displayAddress}
+              {address}
             </p>
 
             {/* Thời gian + Giá */}
             <div className="mt-1 flex flex-wrap gap-3 text-[11px] font-medium text-zinc-800">
               <div className="inline-flex items-center gap-1">
                 {/* dùng clockendIcon thay clockstartIcon */}
-                <Image
+                <img
                   src="/search/clockendIcon.svg"
                   alt="Time"
-                  width={12}
-                  height={12}
+                  className="h-3 w-3"
                 />
-                <span>{displayTimeRange}</span>
+                <span>{timeRange}</span>
               </div>
               <div className="inline-flex items-center gap-1">
-                <Image
+                <img
                   src="/search/walletIcon.svg"
                   alt="Price"
-                  width={12}
-                  height={12}
+                  className="h-3 w-3"
                 />
-                <span>Giá: {displayPrice}</span>
+                <span>Giá: {price}</span>
               </div>
             </div>
           </div>

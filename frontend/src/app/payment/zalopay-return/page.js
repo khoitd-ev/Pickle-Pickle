@@ -23,6 +23,7 @@ export default function ZalopayReturnPage() {
       : null;
 
   // Đồng bộ trạng thái thanh toán về backend
+  // Đồng bộ trạng thái thanh toán về backend
   useEffect(() => {
     if (!appTransId) return;
 
@@ -33,10 +34,15 @@ export default function ZalopayReturnPage() {
         orderId: appTransId,
         success: isSuccess,
       },
-    }).catch((err) => {
-      console.error("Sync payment from ZaloPay return failed:", err);
-    });
+    })
+      .catch((err) => {
+        console.error("Sync payment from ZaloPay return failed:", err);
+      })
+      .finally(() => {
+        window.dispatchEvent(new Event("pp-notification-refresh"));
+      });
   }, [appTransId, isSuccess]);
+
 
   return (
     <main className="min-h-screen bg-[#f5f7fb] flex flex-col items-center pt-24 px-4 text-gray-900">
@@ -93,9 +99,8 @@ export default function ZalopayReturnPage() {
           <div className="flex justify-between text-sm mt-1">
             <span className="text-gray-500">Trạng thái</span>
             <span
-              className={`font-semibold ${
-                isSuccess ? "text-emerald-600" : "text-red-500"
-              }`}
+              className={`font-semibold ${isSuccess ? "text-emerald-600" : "text-red-500"
+                }`}
             >
               {isSuccess ? "Thành công" : "Thất bại"}
             </span>

@@ -77,6 +77,15 @@ export default function OwnerBookingsPage() {
   // Venue
   const [venues, setVenues] = useState([]);
   const [selectedVenueId, setSelectedVenueId] = useState("");
+  const [courtsCount, setCourtsCount] = useState(1);
+
+  function buildCourtsByCount(count) {
+    const n = Math.max(1, Number(count) || 1);
+    return Array.from({ length: n }, (_, i) => ({
+      id: `court-${i + 1}`, // FE fallback id (khi chưa có courtId từ backend)
+      name: `Sân ${i + 1}`,
+    }));
+  }
 
   // Courts & bookings trong venue + ngày đó
   const [hours, setHours] = useState(DEFAULT_HOURS);
@@ -112,9 +121,81 @@ export default function OwnerBookingsPage() {
   }, [currentDate]);
 
   const dateParam = currentDate ? formatDateYMDLocal(currentDate) : "";
-  const displayDate = currentDate
-    ? currentDate.toLocaleDateString("vi-VN")
-    : "";
+  const displayDate = currentDate ? currentDate.toLocaleDateString("vi-VN") : "";
+
+  // ====== Helpers: reload CONFIG + reload DAILY ======
+  async function fetchVenueConfig(venueId) {
+    const res = await apiFetch(`/owner/venues/${venueId}/config`);
+    const cfg = res?.data ?? res;
+    if (!cfg) return null;
+
+    // courtsCount
+    if (cfg.courtsCount != null) {
+      const n = Math.max(1, Number(cfg.courtsCount) || 1);
+      setCourtsCount(n);
+    }
+
+    if (cfg.openTime) setOpenTime(cfg.openTime.slice(0, 5));
+    if (cfg.closeTime) setCloseTime(cfg.closeTime.slice(0, 5));
+
+    if (Array.isArray(cfg.priceRules)) {
+      const mapped = cfg.priceRules.map((r, idx) => ({
+        id: r.id || r._id || idx + 1,
+        startTime: (r.startTime || "").slice(0, 5) || "05:00",
+        endTime: (r.endTime || "").slice(0, 5) || "06:00",
+        price:
+          typeof r.price === "number"
+            ? r.price
+            : typeof r.pricePerHour === "number"
+              ? r.pricePerHour
+              : 0,
+      }));
+      setPriceRules(mapped);
+      setNextRuleId(mapped.length + 1);
+    } else {
+      setPriceRules([]);
+      setNextRuleId(1);
+    }
+
+    return cfg;
+  }
+
+  async function fetchDailyData({ venueId, dateYMD, fallbackCourtsCount }) {
+    const res = await apiFetch(
+      `/owner/bookings/daily?date=${dateYMD}&venueId=${venueId}`
+    );
+
+    const data = res?.data;
+
+    // availability -> giờ + courts
+    if (data?.availability?.courts?.length) {
+      const firstCourtSlots = data.availability.courts[0].slots || [];
+      const newHours =
+        firstCourtSlots.length > 0
+          ? firstCourtSlots.map((s) => s.timeFrom)
+          : DEFAULT_HOURS;
+
+      const newCourts = data.availability.courts.map((c) => ({
+        id: c.courtId,
+        name: c.courtName,
+      }));
+
+      setHours(newHours);
+      setCourts(newCourts);
+
+      // Nếu backend có trả openTime/closeTime trong availability thì sync luôn
+      if (data.availability.openTime) setOpenTime(data.availability.openTime.slice(0, 5));
+      if (data.availability.closeTime) setCloseTime(data.availability.closeTime.slice(0, 5));
+    } else {
+      setHours(DEFAULT_HOURS);
+      setCourts(buildCourtsByCount(fallbackCourtsCount));
+    }
+
+    if (Array.isArray(data?.bookings)) setBookings(data.bookings);
+    else setBookings([]);
+
+    return data;
+  }
 
   // ====== Load danh sách VENUE của owner ======
   useEffect(() => {
@@ -141,8 +222,6 @@ export default function OwnerBookingsPage() {
             setSelectedVenueId(venuesData[0].id);
           }
         }
-        console.log("owner venues res =", res);
-        console.log("venuesData =", venuesData);
       } catch (err) {
         console.error("Load owner venues error:", err);
       }
@@ -164,42 +243,10 @@ export default function OwnerBookingsPage() {
 
     async function loadConfig() {
       try {
-        const res = await apiFetch(`/owner/venues/${selectedVenueId}/config`);
-
-        // Hỗ trợ nhiều kiểu wrapper: { data: {...} } hoặc trả thẳng object
-        const cfg = res?.data ?? res;
-
-        if (ignore || !cfg) return;
-
-        if (cfg.openTime) {
-          setOpenTime(cfg.openTime.slice(0, 5));
-        }
-        if (cfg.closeTime) {
-          setCloseTime(cfg.closeTime.slice(0, 5));
-        }
-
-        if (Array.isArray(cfg.priceRules)) {
-          const mapped = cfg.priceRules.map((r, idx) => ({
-            id: r.id || r._id || idx + 1,
-            startTime: (r.startTime || "").slice(0, 5) || "05:00",
-            endTime: (r.endTime || "").slice(0, 5) || "06:00",
-            // backend có thể trả price hoặc pricePerHour
-            price:
-              typeof r.price === "number"
-                ? r.price
-                : typeof r.pricePerHour === "number"
-                ? r.pricePerHour
-                : 0,
-          }));
-          setPriceRules(mapped);
-          setNextRuleId(mapped.length + 1);
-        } else {
-          setPriceRules([]);
-          setNextRuleId(1);
-        }
+        if (ignore) return;
+        await fetchVenueConfig(selectedVenueId);
       } catch (err) {
         console.error("Load venue config error:", err);
-        // nếu lỗi thì giữ nguyên state hiện tại, không popup để tránh phiền
       }
     }
 
@@ -223,51 +270,11 @@ export default function OwnerBookingsPage() {
       setErrorMsg("");
 
       try {
-        const res = await apiFetch(
-          `/owner/bookings/daily?date=${dateParam}&venueId=${selectedVenueId}`
-        );
-
-        const data = res?.data;
-
-        // availability -> giờ + courts
-        if (data?.availability?.courts?.length) {
-          const firstCourtSlots = data.availability.courts[0].slots || [];
-
-          const newHours =
-            firstCourtSlots.length > 0
-              ? firstCourtSlots.map((s) => s.timeFrom)
-              : DEFAULT_HOURS;
-
-          const newCourts = data.availability.courts.map((c) => ({
-            id: c.courtId,
-            name: c.courtName,
-          }));
-
-          if (!ignore) {
-            setHours(newHours);
-            setCourts(newCourts);
-            // Nếu backend có trả openTime/closeTime trong availability thì sync luôn
-            if (data.availability.openTime) {
-              setOpenTime(data.availability.openTime.slice(0, 5));
-            }
-            if (data.availability.closeTime) {
-              setCloseTime(data.availability.closeTime.slice(0, 5));
-            }
-          }
-        } else {
-          if (!ignore) {
-            setHours(DEFAULT_HOURS);
-            setCourts(DEFAULT_COURTS);
-          }
-        }
-
-        if (Array.isArray(data?.bookings)) {
-          if (!ignore) {
-            setBookings(data.bookings);
-          }
-        } else if (!ignore) {
-          setBookings([]);
-        }
+        await fetchDailyData({
+          venueId: selectedVenueId,
+          dateYMD: dateParam,
+          fallbackCourtsCount: courtsCount,
+        });
       } catch (err) {
         console.error("Load owner daily bookings error:", err);
         if (!ignore) {
@@ -275,7 +282,7 @@ export default function OwnerBookingsPage() {
             "Không tải được dữ liệu từ server, đang hiển thị dữ liệu mô phỏng."
           );
           setHours(DEFAULT_HOURS);
-          setCourts(DEFAULT_COURTS);
+          setCourts(buildCourtsByCount(courtsCount));
           setBookings(DEFAULT_BOOKINGS);
         }
       } finally {
@@ -293,7 +300,34 @@ export default function OwnerBookingsPage() {
       ignore = true;
       clearInterval(intervalId);
     };
-  }, [dateParam, selectedVenueId]);
+  }, [dateParam, selectedVenueId, courtsCount]);
+
+  // Làm mới: reload lại config đã lưu + reload daily data của ngày hiện tại
+  const handleRefresh = async () => {
+    if (!selectedVenueId || !dateParam) return;
+
+    setLoading(true);
+    setErrorMsg("");
+
+    try {
+      // 1) Reload config từ server -> cập nhật open/close/priceRules/courtsCount
+      const cfg = await fetchVenueConfig(selectedVenueId);
+      const countFromServer =
+        cfg?.courtsCount != null ? Math.max(1, Number(cfg.courtsCount) || 1) : courtsCount;
+
+      // 2) Reload daily data theo cấu hình mới nhất
+      await fetchDailyData({
+        venueId: selectedVenueId,
+        dateYMD: dateParam,
+        fallbackCourtsCount: countFromServer,
+      });
+    } catch (err) {
+      console.error("Refresh error:", err);
+      setErrorMsg("Không làm mới được dữ liệu. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter bookings theo trạng thái + search
   const filteredBookings = useMemo(() => {
@@ -398,6 +432,7 @@ export default function OwnerBookingsPage() {
 
     try {
       const payload = {
+        courtsCount,
         openTime,
         closeTime,
         priceRules: priceRules.map((r) => ({
@@ -423,8 +458,7 @@ export default function OwnerBookingsPage() {
       setConfigDialog({
         open: true,
         type: "error",
-        message:
-          err?.message || "Không lưu được cấu hình. Vui lòng thử lại.",
+        message: err?.message || "Không lưu được cấu hình. Vui lòng thử lại.",
       });
     }
   };
@@ -438,15 +472,11 @@ export default function OwnerBookingsPage() {
       {/* HEADER + FILTER NGÀY + VENUE */}
       <section className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">
-            Quản lý đặt sân
-          </h1>
+          <h1 className="text-xl font-semibold text-gray-900">Quản lý đặt sân</h1>
           <p className="text-sm text-gray-500 mt-1">
             Theo dõi tình trạng đặt sân trong ngày và chi tiết các lượt đặt.
           </p>
-          {errorMsg && (
-            <p className="mt-1 text-xs text-red-500">{errorMsg}</p>
-          )}
+          {errorMsg && <p className="mt-1 text-xs text-red-500">{errorMsg}</p>}
         </div>
 
         <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -478,10 +508,7 @@ export default function OwnerBookingsPage() {
 
           <button
             type="button"
-            onClick={() => {
-              setSearch("");
-              setStatusFilter("all");
-            }}
+            onClick={handleRefresh}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded border border-gray-200 text-black bg-white hover:bg-gray-50"
           >
             <span className="text-base leading-none">⟳</span>
@@ -499,18 +526,14 @@ export default function OwnerBookingsPage() {
             </h2>
             <p className="text-xs text-gray-500 mt-1">
               Thiết lập giờ mở cửa, đóng cửa và giá theo từng khung giờ cho{" "}
-              <span className="font-medium">
-                sân trong dropdown phía trên
-              </span>
-              . Cấu hình sẽ được lưu cho từng sân riêng biệt.
+              <span className="font-medium">sân trong dropdown phía trên</span>.
+              Cấu hình sẽ được lưu cho từng sân riêng biệt.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-600">
-                Mở cửa
-              </span>
+              <span className="text-xs font-medium text-gray-600">Mở cửa</span>
               <input
                 type="time"
                 value={openTime}
@@ -520,14 +543,26 @@ export default function OwnerBookingsPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-600">
-                Đóng cửa
-              </span>
+              <span className="text-xs font-medium text-gray-600">Đóng cửa</span>
               <input
                 type="time"
                 value={closeTime}
                 onChange={(e) => setCloseTime(e.target.value)}
                 className="w-32 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-600">Sân con</span>
+              <input
+                type="number"
+                min={1}
+                value={courtsCount}
+                onChange={(e) => {
+                  const n = Math.max(1, Number(e.target.value) || 1);
+                  setCourtsCount(n);
+                }}
+                className="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-500"
               />
             </div>
 
@@ -544,9 +579,7 @@ export default function OwnerBookingsPage() {
         {/* Bảng giá theo khung giờ */}
         <div className="border-t border-gray-100 pt-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-gray-900">
-              Bảng giá theo khung giờ
-            </p>
+            <p className="text-xs font-semibold text-gray-900">Bảng giá theo khung giờ</p>
             <button
               type="button"
               onClick={handleAddPriceRule}
@@ -598,29 +631,23 @@ export default function OwnerBookingsPage() {
                           type="time"
                           value={rule.startTime}
                           onChange={(e) =>
-                            handlePriceRuleChange(
-                              rule.id,
-                              "startTime",
-                              e.target.value
-                            )
+                            handlePriceRuleChange(rule.id, "startTime", e.target.value)
                           }
                           className="w-32 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-500"
                         />
                       </td>
+
                       <td className="px-3 py-2 border-b border-gray-100">
                         <input
                           type="time"
                           value={rule.endTime}
                           onChange={(e) =>
-                            handlePriceRuleChange(
-                              rule.id,
-                              "endTime",
-                              e.target.value
-                            )
+                            handlePriceRuleChange(rule.id, "endTime", e.target.value)
                           }
                           className="w-32 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-500"
                         />
                       </td>
+
                       <td className="px-3 py-2 border-b border-gray-100">
                         <div className="flex items-center gap-1">
                           <input
@@ -628,19 +655,14 @@ export default function OwnerBookingsPage() {
                             min={0}
                             value={rule.price}
                             onChange={(e) =>
-                              handlePriceRuleChange(
-                                rule.id,
-                                "price",
-                                e.target.value
-                              )
+                              handlePriceRuleChange(rule.id, "price", e.target.value)
                             }
                             className="w-32 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-sky-500"
                           />
-                          <span className="text-[11px] text-gray-500">
-                            /giờ
-                          </span>
+                          <span className="text-[11px] text-gray-500">/giờ</span>
                         </div>
                       </td>
+
                       <td className="px-3 py-2 border-b border-gray-100 text-center">
                         <button
                           type="button"
@@ -658,8 +680,7 @@ export default function OwnerBookingsPage() {
           )}
 
           <p className="mt-2 text-[11px] text-gray-500">
-            Gợi ý: chia theo 2–3 khung giờ (ví dụ 05:00–17:00, 17:00–22:00) để
-            dễ quản lý.
+            Gợi ý: chia theo 2–3 khung giờ (ví dụ 05:00–17:00, 17:00–22:00) để dễ quản lý.
           </p>
         </div>
       </section>
@@ -667,14 +688,7 @@ export default function OwnerBookingsPage() {
       {/* CARD: SÂN TRONG NGÀY */}
       <section className="bg-white rounded-xl shadow-sm border border-gray-100 px-6 py-5 space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">
-            Chi tiết sân trong ngày
-          </h2>
-          <p className="text-xs text-gray-500">
-            {loading
-              ? "Đang tải dữ liệu..."
-              : "Khung giờ hiển thị: 05:00 – 22:00"}
-          </p>
+          <h2 className="text-sm font-semibold text-gray-900">Chi tiết sân trong ngày</h2>
         </div>
 
         <div className="rounded-3xl bg-[#f7f7f7] border border-[#e5e5e5] px-6 py-6 space-y-5">
@@ -685,12 +699,7 @@ export default function OwnerBookingsPage() {
               onClick={handlePrevDate}
               className="flex items-center justify-center cursor-pointer transition hover:opacity-80 hover:scale-110"
             >
-              <Image
-                src="/courts/prevIcon1.svg"
-                alt="Ngày trước"
-                width={20}
-                height={20}
-              />
+              <Image src="/courts/prevIcon1.svg" alt="Ngày trước" width={20} height={20} />
             </button>
 
             <span>{displayDate}</span>
@@ -700,21 +709,13 @@ export default function OwnerBookingsPage() {
               onClick={handleNextDate}
               className="flex items-center justify-center cursor-pointer transition hover:opacity-80 hover:scale-110"
             >
-              <Image
-                src="/courts/nextIcon1.svg"
-                alt="Ngày sau"
-                width={20}
-                height={20}
-              />
+              <Image src="/courts/nextIcon1.svg" alt="Ngày sau" width={20} height={20} />
             </button>
           </div>
 
           {/* LEGEND */}
           <div className="flex items-center justify-center gap-6 text-sm text-black">
-            <LegendItem
-              colorClass="bg-white border border-[#dcdcdc]"
-              label="Trống"
-            />
+            <LegendItem colorClass="bg-white border border-[#dcdcdc]" label="Trống" />
             <LegendItem colorClass="bg-[#ffe94d]" label="Đã đặt / Khóa" />
           </div>
 
@@ -749,9 +750,7 @@ export default function OwnerBookingsPage() {
                             key={`${court.id}-${hour}`}
                             className="h-7 rounded-[6px] border border-[#dcdcdc] transition"
                             style={{
-                              backgroundColor: booked
-                                ? "#ffe94d"
-                                : "#ffffff",
+                              backgroundColor: booked ? "#ffe94d" : "#ffffff",
                             }}
                           />
                         );
@@ -763,8 +762,7 @@ export default function OwnerBookingsPage() {
             </div>
 
             <p className="mt-3 text-[11px] text-gray-500">
-              Ô màu vàng thể hiện khung giờ đã được đặt trong ngày{" "}
-              {displayDate || "..."}.
+              Ô màu vàng thể hiện khung giờ đã được đặt trong ngày {displayDate || "..."}.
             </p>
           </div>
         </div>
@@ -794,12 +792,7 @@ export default function OwnerBookingsPage() {
           <div className="flex items-center gap-2 w-full md:w-auto">
             <div className="relative flex-1 md:flex-none">
               <span className="absolute left-2 top-1/2 -translate-y-1/2">
-                <Image
-                  src="/searchIcon1.svg"
-                  alt="Tìm kiếm"
-                  width={14}
-                  height={14}
-                />
+                <Image src="/searchIcon1.svg" alt="Tìm kiếm" width={14} height={14} />
               </span>
               <input
                 type="text"
@@ -817,85 +810,45 @@ export default function OwnerBookingsPage() {
           <table className="min-w-full text-xs md:text-sm">
             <thead className="bg-gray-50">
               <tr className="text-gray-700">
-                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">
-                  STT
-                </th>
-                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">
-                  Mã booking
-                </th>
-                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">
-                  Người đặt
-                </th>
-                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">
-                  Sân
-                </th>
-                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">
-                  Thời gian
-                </th>
-                <th className="px-4 py-2 text-center font-medium border-b border-gray-100">
-                  Số lượng sân con
-                </th>
-                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">
-                  Số điện thoại
-                </th>
-                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">
-                  Ngày đặt
-                </th>
-                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">
-                  Trạng thái
-                </th>
+                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">STT</th>
+                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">Mã booking</th>
+                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">Người đặt</th>
+                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">Sân</th>
+                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">Thời gian</th>
+                <th className="px-4 py-2 text-center font-medium border-b border-gray-100">Số lượng sân con</th>
+                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">Số điện thoại</th>
+                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">Ngày đặt</th>
+                <th className="px-4 py-2 text-left font-medium border-b border-gray-100">Trạng thái</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td
-                    colSpan={9}
-                    className="px-4 py-4 text-center text-gray-500 text-sm"
-                  >
+                  <td colSpan={9} className="px-4 py-4 text-center text-gray-500 text-sm">
                     Đang tải dữ liệu...
                   </td>
                 </tr>
               ) : filteredBookings.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={9}
-                    className="px-4 py-4 text-center text-gray-500 text-sm"
-                  >
-                    Không có lượt đặt sân nào phù hợp trong ngày{" "}
-                    {displayDate || "..."}.
+                  <td colSpan={9} className="px-4 py-4 text-center text-gray-500 text-sm">
+                    Không có lượt đặt sân nào phù hợp trong ngày {displayDate || "..."}.
                   </td>
                 </tr>
               ) : (
                 filteredBookings.map((b, index) => (
-                  <tr
-                    key={b.id}
-                    className={index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}
-                  >
-                    <td className="px-4 py-2 border-b border-gray-50">
-                      {index + 1}
-                    </td>
-                    <td className="px-4 py-2 border-b border-gray-50 text-gray-800">
-                      {b.code}
-                    </td>
-                    <td className="px-4 py-2 border-b border-gray-50 text-gray-800">
-                      {b.customerName}
-                    </td>
-                    <td className="px-4 py-2 border-b border-gray-50 text-gray-800">
-                      {b.courtName}
-                    </td>
+                  <tr key={b.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
+                    <td className="px-4 py-2 border-b border-gray-50">{index + 1}</td>
+                    <td className="px-4 py-2 border-b border-gray-50 text-gray-800">{b.code}</td>
+                    <td className="px-4 py-2 border-b border-gray-50 text-gray-800">{b.customerName}</td>
+                    <td className="px-4 py-2 border-b border-gray-50 text-gray-800">{b.courtName}</td>
                     <td className="px-4 py-2 border-b border-gray-50 text-gray-800">
                       {b.startTime} - {b.endTime}
                     </td>
                     <td className="px-4 py-2 border-b border-gray-50 text-center text-gray-800">
                       {b.slotsCount ?? 1}
                     </td>
-                    <td className="px-4 py-2 border-b border-gray-50 text-gray-800">
-                      {b.phone}
-                    </td>
-                    <td className="px-4 py-2 border-b border-gray-50 text-gray-800">
-                      {b.bookedAt}
-                    </td>
+                    <td className="px-4 py-2 border-b border-gray-50 text-gray-800">{b.phone}</td>
+                    <td className="px-4 py-2 border-b border-gray-50 text-gray-800">{b.bookedAt}</td>
                     <td className="px-4 py-2 border-b border-gray-50">
                       <StatusBadge status={b.status} />
                     </td>
@@ -909,9 +862,7 @@ export default function OwnerBookingsPage() {
         <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
           <p>
             Tổng số lượt đặt:{" "}
-            <span className="font-medium text-gray-700">
-              {filteredBookings.length}
-            </span>
+            <span className="font-medium text-gray-700">{filteredBookings.length}</span>
           </p>
         </div>
       </section>
@@ -936,9 +887,7 @@ export default function OwnerBookingsPage() {
                     ? "Lưu cấu hình thành công"
                     : "Lưu cấu hình thất bại"}
                 </h3>
-                <p className="text-xs text-gray-600">
-                  {configDialog.message}
-                </p>
+                <p className="text-xs text-gray-600">{configDialog.message}</p>
               </div>
             </div>
 

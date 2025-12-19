@@ -12,42 +12,67 @@ export default function SearchResultsGrid({
 }) {
   // Map venue -> court object cho CourtCard
   const mappedCourts = (venues ?? []).map((v) => {
-    const images = Array.isArray(v.images) ? v.images : [];
+    const avatar = v.avatarImageUrl || v.avatarImage || "";
+    const primaryImage =
+      (v.images || []).find((img) => img.isPrimary) ||
+      (v.images || [])[0];
 
-    const primaryImageDoc =
-      images.find((img) => img.isPrimary) || images[0];
-
-    // Ưu tiên avatarImage, sau đó tới ảnh primary, cuối cùng là mock
-    const rawImage =
-      v.avatarImage ||
-      primaryImageDoc?.url ||
-      "/courts/sample1.png";
-
-    // Ưu tiên heroPhone / heroAddress nếu có
+    // ---- PHONE: ưu tiên heroPhone -> phone ----
     const phone = v.heroPhone || v.phone || "";
+
+    // ---- ADDRESS: ưu tiên heroAddress -> address ----
     const address = v.heroAddress || v.address || "";
 
-    // Lấy giờ mở / đóng nếu BE có trả về, fallback mặc định
-    const openTimeRaw = v.openTime || v.openHour || "05:00";
-    const closeTimeRaw = v.closeTime || v.closeHour || "23:00";
+    // ---- TIME RANGE: nếu API đã bơm openTime/closeTime thì dùng, không thì fallback ----
+    let timeRange = "05:00–23:00";
+    if (v.openTime || v.closeTime) {
+      const open = v.openTime || "05:00";
+      const close = v.closeTime || "23:00";
+      timeRange = `${open}–${close}`;
+    }
 
-    const openTime = (openTimeRaw || "").slice(0, 5);
-    const closeTime = (closeTimeRaw || "").slice(0, 5);
+    // ---- PRICE: dùng giá index đầu tiên trong cấu hình giá theo khung giờ (nếu có) ----
+    let configFirstPrice = null;
 
-    const timeRange = `${openTime}–${closeTime}`;
+    if (Array.isArray(v.priceRules) && v.priceRules.length > 0) {
+      // sort theo thời gian bắt đầu nếu có trường timeFrom / startTime
+      const sortedRules = [...v.priceRules].sort((a, b) => {
+        const aTime = a.timeFrom || a.startTime || "";
+        const bTime = b.timeFrom || b.startTime || "";
+        return aTime.localeCompare(bTime);
+      });
 
+      const firstRule = sortedRules[0];
+
+      // cố gắng lấy fixedPricePerHour trước, rồi đến walkinPricePerHour, rồi price
+      const p =
+        typeof firstRule.fixedPricePerHour === "number"
+          ? firstRule.fixedPricePerHour
+          : typeof firstRule.walkinPricePerHour === "number"
+          ? firstRule.walkinPricePerHour
+          : typeof firstRule.price === "number"
+          ? firstRule.price
+          : null;
+
+      if (typeof p === "number") {
+        configFirstPrice = p;
+      }
+    }
+
+    // fallback: nếu chưa có cấu hình priceRules thì dùng basePricePerHour từ Venue
     const basePrice =
-      typeof v.basePricePerHour === "number"
-        ? v.basePricePerHour
-        : 0;
+      typeof v.basePricePerHour === "number" ? v.basePricePerHour : null;
+
+    const finalPrice =
+      typeof configFirstPrice === "number" ? configFirstPrice : basePrice;
 
     const price =
-      basePrice > 0
-        ? `${basePrice.toLocaleString("vi-VN")}đ/giờ`
+      typeof finalPrice === "number" && finalPrice > 0
+        ? `${finalPrice.toLocaleString("vi-VN")}đ/giờ`
         : "";
 
     return {
-      id: v.id || v._id,
+      id: v._id,
       name: v.name,
       rating: v.rating ?? 4.5,
       reviews: v.reviewCount ?? 0,
@@ -55,7 +80,7 @@ export default function SearchResultsGrid({
       address,
       timeRange,
       price,
-      image: rawImage,
+      image: avatar || primaryImage?.url || "/courts/sample1.png",
     };
   });
 
@@ -66,9 +91,7 @@ export default function SearchResultsGrid({
   return (
     <div>
       {loading && (
-        <p className="mb-2 text-sm text-zinc-500">
-          Đang tải danh sách sân...
-        </p>
+        <p className="mb-2 text-sm text-zinc-500">Đang tải danh sách sân...</p>
       )}
 
       {/* GRID 2 CỘT */}

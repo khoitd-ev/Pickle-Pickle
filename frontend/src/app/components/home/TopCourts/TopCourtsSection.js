@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import CourtCard from "./CourtCard";
 import Container from "../../layout/Container";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+
+// ===== MOCK GIỮ NGUYÊN =====
 const courts = [
   {
     id: 1,
@@ -89,35 +92,91 @@ const courts = [
 
 // nhân bản list để tạo cảm giác vô cực
 const COPIES = 3;
-const extendedCourts = Array.from({ length: COPIES }, (_, copyIndex) =>
-  courts.map((c, idx) => ({
-    ...c,
-    _copyKey: `${copyIndex}-${idx}`,
-  }))
-).flat();
 
 const CARD_WIDTH = 280; // px
 const GAP = 24; // px
 const STEP = CARD_WIDTH + GAP;
 
+function resolveImageUrl(raw) {
+  if (!raw || typeof raw !== "string") return "";
+  if (raw.startsWith("/uploads/")) return `${API_BASE}${raw}`;
+  return raw;
+}
+
 export default function TopCourtsSection() {
   const scrollRef = useRef(null);
+
+
+  const [stateCourts, setStateCourts] = useState(courts);
 
   // drag state
   const isDragging = useRef(false);
   const startX = useRef(0);
   const scrollStart = useRef(0);
 
-  // khi mount: đứng ở copy giữa
+
+  const extendedCourts = useMemo(() => {
+    return Array.from({ length: COPIES }, (_, copyIndex) =>
+      stateCourts.map((c, idx) => ({
+        ...c,
+        _copyKey: `${copyIndex}-${idx}`,
+      }))
+    ).flat();
+  }, [stateCourts]);
+
+
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        const url = `${API_BASE}/public/home/top-venues?limit=8`;
+        const res = await fetch(url);
+        const json = await res.json();
+        const items = json?.items || [];
+
+        if (!mounted) return;
+
+        if (Array.isArray(items) && items.length > 0) {
+          setStateCourts(
+            items.map((v, idx) => ({
+              id: v.id || `venue-${idx}`,
+              name: v.name || "—",
+
+              image: resolveImageUrl(v.avatarImage),
+              courts: Number(v.courtsCount ?? 0),
+
+              permLines: false,
+              permNets: false,
+              portableNets: false,
+            }))
+          );
+        }
+      } catch (e) {
+        console.error("TopCourtsSection fetch failed:", e);
+        // fallback mock
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+
+
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
 
-    const totalWidth = container.scrollWidth;
-    const singleWidth = totalWidth / COPIES;
+    requestAnimationFrame(() => {
+      const totalWidth = container.scrollWidth;
+      if (!totalWidth) return;
 
-    container.scrollLeft = singleWidth; // copy thứ 2 (ở giữa)
-  }, []);
+      const singleWidth = totalWidth / COPIES;
+      container.scrollLeft = singleWidth; // copy thứ 2 (ở giữa)
+    });
+  }, [extendedCourts.length]);
 
   // vô cực: chỉnh lại vị trí khi kéo quá xa
   const handleScroll = () => {
@@ -219,16 +278,7 @@ export default function TopCourtsSection() {
         {/* slider */}
         <div
           ref={scrollRef}
-          className="
-            slider
-            flex gap-6
-            overflow-x-auto
-            pb-6
-            cursor-grab
-            select-none
-            [-ms-overflow-style:none] [scrollbar-width:none]
-            bg-white
-          "
+          className="slider flex gap-6 overflow-x-auto pb-6 cursor-grab select-none [-ms-overflow-style:none] [scrollbar-width:none] bg-white"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseLeave={stopDragging}

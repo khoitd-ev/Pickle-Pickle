@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AdminSettingsPage() {
+  const router = useRouter();
   const [notificationSettings, setNotificationSettings] = useState({
     email: true,
     inApp: true,
@@ -69,6 +71,7 @@ export default function AdminSettingsPage() {
               <div className="flex items-end">
                 <button
                   type="button"
+                  onClick={() => router.push("/account/password")}
                   className="inline-flex items-center justify-center rounded-xl border border-sky-500 bg-white px-4 py-2 text-sm font-medium text-sky-600 hover:bg-sky-50 transition"
                 >
                   Đổi mật khẩu
@@ -76,7 +79,7 @@ export default function AdminSettingsPage() {
               </div>
             </div>
 
-            
+
           </div>
 
           {/* Quy tắc phê duyệt */}
@@ -129,7 +132,7 @@ export default function AdminSettingsPage() {
             <h2 className="text-base font-semibold text-gray-900 mb-3">
               Lưu cấu hình
             </h2>
-            
+
             <button
               type="button"
               className="w-full rounded-xl bg-sky-500 py-2.5 text-sm font-semibold text-white shadow hover:bg-sky-600 transition"
@@ -156,14 +159,12 @@ function ToggleRow({ title, description, checked, onChange }) {
       <button
         type="button"
         onClick={onChange}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-          checked ? "bg-sky-500" : "bg-gray-300"
-        }`}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${checked ? "bg-sky-500" : "bg-gray-300"
+          }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${
-            checked ? "translate-x-5" : "translate-x-1"
-          }`}
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${checked ? "translate-x-5" : "translate-x-1"
+            }`}
         />
       </button>
     </div>

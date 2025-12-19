@@ -22,6 +22,7 @@ export default function MomoReturnPage() {
       : null;
 
   // Đồng bộ trạng thái thanh toán về backend
+  // Đồng bộ trạng thái thanh toán về backend
   useEffect(() => {
     if (!orderId) return;
 
@@ -32,10 +33,16 @@ export default function MomoReturnPage() {
         orderId,
         success: isSuccess,
       },
-    }).catch((err) => {
-      console.error("Sync payment from MoMo return failed:", err);
-    });
+    })
+      .catch((err) => {
+        console.error("Sync payment from MoMo return failed:", err);
+      })
+      .finally(() => {
+        // refresh badge notification trên header
+        window.dispatchEvent(new Event("pp-notification-refresh"));
+      });
   }, [orderId, isSuccess]);
+
 
   return (
     <main className="min-h-screen bg-[#f5f7fb] flex flex-col items-center pt-24 px-4 text-gray-900">
@@ -92,9 +99,8 @@ export default function MomoReturnPage() {
           <div className="flex justify-between text-sm mt-1">
             <span className="text-gray-500">Trạng thái</span>
             <span
-              className={`font-semibold ${
-                isSuccess ? "text-emerald-600" : "text-red-500"
-              }`}
+              className={`font-semibold ${isSuccess ? "text-emerald-600" : "text-red-500"
+                }`}
             >
               {message || (isSuccess ? "Thành công" : "Thất bại")}
             </span>

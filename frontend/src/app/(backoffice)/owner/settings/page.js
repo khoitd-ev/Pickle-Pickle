@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function OwnerSettingsPage() {
+  const router = useRouter();
   const [notificationSettings, setNotificationSettings] = useState({
     email: true,
     sms: false,
@@ -84,17 +86,13 @@ export default function OwnerSettingsPage() {
               <div className="flex items-end">
                 <button
                   type="button"
+                  onClick={() => router.push("/account/password")}
                   className="inline-flex items-center justify-center rounded-xl border border-sky-500 bg-white px-4 py-2 text-sm font-medium text-sky-600 hover:bg-sky-50 transition"
                 >
                   Đổi mật khẩu
                 </button>
               </div>
             </div>
-
-            <p className="mt-3 text-xs text-gray-400">
-              Các thông tin trên được lấy từ hồ sơ tài khoản. Sau này có thể kết
-              nối với API để cho phép chỉnh sửa.
-            </p>
           </div>
 
           {/* Cấu hình đặt sân */}
@@ -161,10 +159,6 @@ export default function OwnerSettingsPage() {
             <h2 className="text-base font-semibold text-gray-900 mb-3">
               Lưu thay đổi
             </h2>
-            <p className="text-xs text-gray-500 mb-4">
-              Các thiết lập hiện tại đang được lưu ở phía client. Khi kết nối
-              backend, bạn có thể gọi API để lưu cấu hình cho từng chủ sân.
-            </p>
             <button
               type="button"
               className="w-full rounded-xl bg-sky-500 py-2.5 text-sm font-semibold text-white shadow hover:bg-sky-600 transition"
@@ -191,14 +185,12 @@ function ToggleRow({ title, description, checked, onChange }) {
       <button
         type="button"
         onClick={onChange}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-          checked ? "bg-sky-500" : "bg-gray-300"
-        }`}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${checked ? "bg-sky-500" : "bg-gray-300"
+          }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${
-            checked ? "translate-x-5" : "translate-x-1"
-          }`}
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${checked ? "translate-x-5" : "translate-x-1"
+            }`}
         />
       </button>
     </div>

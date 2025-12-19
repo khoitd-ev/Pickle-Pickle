@@ -1,37 +1,40 @@
+"use client";
+
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function CourtCard({ court }) {
-  const { name, image, courts, permLines, permNets, portableNets } = court;
+  const router = useRouter();
+
+  const { id, name, image, courts, permLines, permNets, portableNets } = court;
+
+  const handleViewDetail = () => {
+    if (!id) return;
+    router.push(`/courts/${id}`);
+  };
 
   return (
     <div
-      className="
-        flex-shrink-0
-        w-[240px] md:w-[260px]
-        rounded-2xl
-        overflow-hidden
-        bg-black
-        text-white
-        shadow-[0_8px_16px_rgba(0,0,0,0.18)]
-        hover:shadow-[0_14px_28px_rgba(0,0,0,0.22)]
-        snap-start
-        transition-transform duration-200 ease-out
-        hover:-translate-y-2
-        cursor-pointer
-      "
+      role="button"
+      tabIndex={0}
+      onClick={handleViewDetail}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") handleViewDetail();
+      }}
+      className="flex-shrink-0 w-[240px] md:w-[260px] rounded-2xl overflow-hidden bg-black text-white shadow-[0_8px_16px_rgba(0,0,0,0.18)] hover:shadow-[0_14px_28px_rgba(0,0,0,0.22)] snap-start transition-transform duration-200 ease-out hover:-translate-y-2 cursor-pointer"
     >
       {/* Ảnh sân */}
       <div className="relative h-[150px] md:h-[170px] w-full">
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={image}
           alt={name}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 240px, 260px"
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
         />
       </div>
 
-      {/* Phần thông tin, text nằm sát đáy card */}
+      {/* Phần thông tin */}
       <div className="px-4 pb-5 pt-4 bg-black flex flex-col justify-end min-h-[150px]">
         <h3 className="text-[15px] md:text-[17px] font-semibold leading-snug mb-3">
           {name}

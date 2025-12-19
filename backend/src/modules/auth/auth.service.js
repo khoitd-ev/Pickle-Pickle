@@ -5,6 +5,9 @@ import { hashPassword, verifyPassword } from "../../shared/utils/password.js";
 import { sendVerificationEmail } from "../../shared/email/emailClient.js";
 import { UserRole } from "../../models/userRole.model.js";
 import { Role } from "../../models/role.model.js";
+import { OAuth2Client } from "google-auth-library";
+import crypto from "crypto";
+
 function generateOtp() {
     return String(Math.floor(100000 + Math.random() * 900000));
 }
@@ -196,8 +199,19 @@ export async function loginUser(input) {
     }
 
     if (!user.emailVerified) {
-        throw new Error("Email chưa được xác minh");
+        // gửi lại OTP luôn khi user cố login
+        const resendPayload = await resendEmailOtp({ email: user.email });
+
+        const e = new Error("Email chưa được xác minh. Mã xác minh đã được gửi lại.");
+        e.code = "EMAIL_NOT_VERIFIED";
+        e.email = user.email;
+
+        // dev mode: nếu resendEmailOtp có debugOtp thì trả luôn (tiện test)
+        if (resendPayload?.debugOtp) e.debugOtp = resendPayload.debugOtp;
+
+        throw e;
     }
+
 
     // ---- Lấy role chính của user từ userroles ----
     const userRole = await UserRole.findOne({ user: user._id }).populate("role");
@@ -214,3 +228,73 @@ export async function loginUser(input) {
 }
 
 
+export async function loginWithGoogle(input) {
+    const { credential } = input || {};
+    if (!credential) {
+        throw new Error("Missing Google credential");
+    }
+    if (!config.googleClientId) {
+        throw new Error("Missing GOOGLE_CLIENT_ID in env");
+    }
+
+    const client = new OAuth2Client(config.googleClientId);
+
+    const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: config.googleClientId,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload) throw new Error("Invalid Google token");
+
+    const email = payload.email;
+    const fullName = payload.name || payload.given_name || "Google User";
+    const emailVerifiedFromGoogle = !!payload.email_verified;
+
+    if (!email) throw new Error("Google account has no email");
+
+    // 1) find user by email
+    let user = await User.findOne({ email });
+
+    // 2) create if not exist
+    if (!user) {
+
+        const randomPassword = crypto.randomBytes(32).toString("hex");
+        const passwordHash = await hashPassword(randomPassword);
+
+        user = await User.create({
+            fullName,
+            email,
+            phone: null,
+            passwordHash,
+            emailVerified: emailVerifiedFromGoogle ? true : false,
+            isActive: true,
+            lastLoginAt: new Date(),
+        });
+
+        // gán role CUSTOMER giống register:contentReference[oaicite:6]{index=6}
+        const customerRole = await Role.findOne({ code: "CUSTOMER" });
+        if (customerRole) {
+            await UserRole.create({ user: user._id, role: customerRole._id });
+        }
+    } else {
+        if (!user.isActive) throw new Error("Tài khoản đã bị khóa");
+
+        // nếu user emailVerified=false mà Google verify rồi => nâng lên true
+        if (!user.emailVerified && emailVerifiedFromGoogle) {
+            user.emailVerified = true;
+        }
+
+        user.lastLoginAt = new Date();
+        await user.save();
+    }
+
+    // lấy role giống loginUser():contentReference[oaicite:7]{index=7}
+    const userRole = await UserRole.findOne({ user: user._id }).populate("role");
+    const roleCode = userRole?.role?.code || "CUSTOMER";
+
+    const safeUser = toSafeUser(user, roleCode);
+    const token = signToken(user, roleCode);
+
+    return { user: safeUser, token };
+}

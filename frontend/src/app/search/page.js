@@ -102,7 +102,7 @@ export default function SearchPage() {
             setDraftFilters((prev) => ({ ...prev, ...patch }))
           }
           onApplyFilters={handleApplyFilters}
-          onChangeAreaLive={handleChangeAreaLive}  // 👈 truyền vào
+          onChangeAreaLive={handleChangeAreaLive}  
           stats={{
             totalCourts: pagination.total,
             totalAreas: meta.areaCount,

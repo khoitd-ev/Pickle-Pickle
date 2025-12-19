@@ -3,8 +3,7 @@ const { Schema } = mongoose;
 
 const addonSchema = new Schema(
   {
-    // Mã nội bộ, trùng với id FE đang dùng: "balls", "racket-rent", ...
-    // Không để unique toàn hệ thống nữa, mà unique theo (venue + code)
+
     code: {
       type: String,
       required: true,
@@ -24,7 +23,7 @@ const addonSchema = new Schema(
       enum: ["equipment", "drink", "support", "other"],
     },
 
-    // Nhãn tiếng Việt hiển thị UI: "Dụng cụ", "Đồ uống", ...
+
     categoryLabel: {
       type: String,
       required: true,

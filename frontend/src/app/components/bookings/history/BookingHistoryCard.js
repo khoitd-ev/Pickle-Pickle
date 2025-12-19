@@ -52,12 +52,12 @@ export default function BookingHistoryCard({
   return (
     <article className="flex w-full rounded-[16px] bg-[#f5f5f5] border border-[#e5e5e5] overflow-hidden">
       {/* Ảnh sân */}
-      <div className="relative w-[260px] h-[150px] flex-shrink-0">
-        <Image
-          src={imageUrl}
-          alt={courtName}
-          fill
-          className="object-cover"
+      <div className="relative h-[140px] w-[190px] overflow-hidden rounded-xl">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={booking.imageUrl}
+          alt={booking.courtName || "court"}
+          className="h-full w-full object-cover"
         />
       </div>
 

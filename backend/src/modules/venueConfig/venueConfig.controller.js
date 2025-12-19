@@ -4,7 +4,9 @@ import {
   upsertVenueOpenHours,
   getVenuePriceRules,
   upsertVenuePriceRules,
+  updateVenueCourtsCount,
 } from "./venueConfig.service.js";
+import { Venue } from "../../models/venue.model.js";
 
 // ===== OPEN HOURS =====
 export async function handleGetOpenHours(req, reply) {
@@ -49,9 +51,10 @@ export async function handleGetConfig(req, reply) {
   const ownerId = req.user.id;
   const { venueId } = req.params;
 
-  const [openHoursDocs, priceRuleDocs] = await Promise.all([
+  const [openHoursDocs, priceRuleDocs, venue] = await Promise.all([
     getVenueOpenHours(ownerId, venueId),
     getVenuePriceRules(ownerId, venueId),
+    Venue.findById(venueId).select("courtsCount").lean(),
   ]);
 
   // ===== Gộp openTime / closeTime cho UI =====
@@ -67,27 +70,26 @@ export async function handleGetConfig(req, reply) {
     );
 
     openTime = (sortedFrom[0].timeFrom || "05:00").slice(0, 5);
-    closeTime = (
-      sortedTo[sortedTo.length - 1].timeTo || "22:00"
-    ).slice(0, 5);
+    closeTime = (sortedTo[sortedTo.length - 1].timeTo || "22:00").slice(0, 5);
   }
 
   // ===== Map PriceRule -> shape đơn giản cho UI =====
   const uiPriceRules = Array.isArray(priceRuleDocs)
     ? priceRuleDocs.map((r) => ({
-        id: r._id.toString(),
-        startTime: (r.timeFrom || "").slice(0, 5),
-        endTime: (r.timeTo || "").slice(0, 5),
-        price:
-          typeof r.fixedPricePerHour === "number"
-            ? r.fixedPricePerHour
-            : typeof r.walkinPricePerHour === "number"
+      id: r._id.toString(),
+      startTime: (r.timeFrom || "").slice(0, 5),
+      endTime: (r.timeTo || "").slice(0, 5),
+      price:
+        typeof r.fixedPricePerHour === "number"
+          ? r.fixedPricePerHour
+          : typeof r.walkinPricePerHour === "number"
             ? r.walkinPricePerHour
             : 0,
-      }))
+    }))
     : [];
 
   return reply.send({
+    courtsCount: venue?.courtsCount ?? 1,
     openTime,
     closeTime,
     priceRules: uiPriceRules,
@@ -99,7 +101,13 @@ export async function handleGetConfig(req, reply) {
 export async function handleUpsertConfig(req, reply) {
   const ownerId = req.user.id;
   const { venueId } = req.params;
-  const { openTime, closeTime, priceRules } = req.body || {};
+
+  const { courtsCount, openTime, closeTime, priceRules } = req.body || {};
+
+  // ===== 0) Lưu courtsCount (nếu có gửi) =====
+  if (courtsCount !== undefined && courtsCount !== null) {
+    await updateVenueCourtsCount(ownerId, venueId, courtsCount);
+  }
 
   // ===== 1) Lưu open hours cho cả tuần =====
   let savedOpenHours;
@@ -116,7 +124,6 @@ export async function handleUpsertConfig(req, reply) {
 
     savedOpenHours = await upsertVenueOpenHours(ownerId, venueId, items);
   } else {
-    // nếu FE không gửi thì giữ cấu hình hiện tại
     savedOpenHours = await getVenueOpenHours(ownerId, venueId);
   }
 
@@ -131,7 +138,7 @@ export async function handleUpsertConfig(req, reply) {
           : Number(r.price) || 0;
 
       return {
-        dayLabel: "Cả tuần", // hoặc "T2 - CN"
+        dayLabel: "Cả tuần",
         dayOfWeekFrom: 1,
         dayOfWeekTo: 7,
         timeFrom: r.startTime,
@@ -159,9 +166,7 @@ export async function handleUpsertConfig(req, reply) {
     );
 
     openTimeResp = (sortedFrom[0].timeFrom || "05:00").slice(0, 5);
-    closeTimeResp = (
-      sortedTo[sortedTo.length - 1].timeTo || "22:00"
-    ).slice(0, 5);
+    closeTimeResp = (sortedTo[sortedTo.length - 1].timeTo || "22:00").slice(0, 5);
   }
 
   const uiPriceRules = Array.isArray(savedPriceRulesDocs)
@@ -178,10 +183,15 @@ export async function handleUpsertConfig(req, reply) {
       }))
     : [];
 
+  // Lấy courtsCount mới nhất để trả về FE
+  const venue = await Venue.findById(venueId).select("courtsCount").lean();
+
   return reply.send({
+    courtsCount: venue?.courtsCount ?? 1,
     openTime: openTimeResp,
     closeTime: closeTimeResp,
     priceRules: uiPriceRules,
   });
 }
+
 

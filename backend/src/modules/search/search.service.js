@@ -1,5 +1,6 @@
 // src/modules/search/search.service.js
 import { Venue } from "../../models/venue.model.js";
+import { getVenueConfigForDay } from "../venueConfig/venueConfig.service.js";
 
 const AREA_MAP = {
   // Trung tâm
@@ -37,7 +38,6 @@ const AREA_MAP = {
   quan2: "Quận 2",
   quan7: "Quận 7",
 };
-
 export async function searchVenues({
   keyword,
   area,
@@ -52,8 +52,6 @@ export async function searchVenues({
   }
 
   if (area) {
-    // nếu FE gửi key (q1, quan7, ...) thì map sang tên quận;
-    // nếu FE gửi thẳng "Quận 7" thì dùng luôn
     const mapped = AREA_MAP[area] || area;
     filter.district = mapped;
   }
@@ -61,7 +59,7 @@ export async function searchVenues({
   const pageNumber = Number(page) || 1;
   const pageSize = Number(limit) || 8;
 
-  const [items, total, distinctDistricts] = await Promise.all([
+  const [rawItems, total, distinctDistricts] = await Promise.all([
     Venue.find(filter)
       .sort({ name: 1 })
       .skip((pageNumber - 1) * pageSize)
@@ -70,6 +68,50 @@ export async function searchVenues({
     Venue.countDocuments(filter),
     Venue.distinct("district", filter),
   ]);
+
+  const today = new Date();
+
+  const items = await Promise.all(
+    (rawItems || []).map(async (v) => {
+      try {
+        const { openTime, closeTime, priceRules } = await getVenueConfigForDay(
+          v._id,
+          today
+        );
+
+
+        const uiPriceRules = Array.isArray(priceRules)
+          ? priceRules
+              .map((r) => ({
+                startTime: (r.timeFrom || "").slice(0, 5),
+                endTime: (r.timeTo || "").slice(0, 5),
+                price:
+                  typeof r.fixedPricePerHour === "number"
+                    ? r.fixedPricePerHour
+                    : typeof r.walkinPricePerHour === "number"
+                    ? r.walkinPricePerHour
+                    : 0,
+              }))
+              .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""))
+          : [];
+
+        return {
+          ...v,
+          openTime,
+          closeTime,
+          priceRules: uiPriceRules,
+        };
+      } catch (err) {
+        // fallback nếu venue chưa có config
+        return {
+          ...v,
+          openTime: "05:00",
+          closeTime: "22:00",
+          priceRules: [],
+        };
+      }
+    })
+  );
 
   return {
     items,
@@ -83,3 +125,5 @@ export async function searchVenues({
     },
   };
 }
+
+

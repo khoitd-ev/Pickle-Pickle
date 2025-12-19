@@ -12,6 +12,9 @@ import {
     createOwnerUserService,
     updateOwnerUserService,
     deleteOwnerUserService,
+    getMeService,
+    updateMeService,
+    changeMyPasswordService,
 } from "./user.service.js";
 
 
@@ -147,38 +150,59 @@ export async function deleteCustomerHandler(request, reply) {
 
 
 export async function listOwnersHandler(req, reply) {
-  const adminId = req.user.id;
-  const { q = "", status = "ALL" } = req.query || {};
+    const adminId = req.user.id;
+    const { q = "", status = "ALL" } = req.query || {};
 
-  const data = await listOwnerUsersService(adminId, {
-    search: q,
-    status,
-  });
+    const data = await listOwnerUsersService(adminId, {
+        search: q,
+        status,
+    });
 
-  return reply.send(data);
+    return reply.send(data);
 }
 
 export async function createOwnerHandler(req, reply) {
-  const adminId = req.user.id;
-  const payload = req.body || {};
+    const adminId = req.user.id;
+    const payload = req.body || {};
 
-  const created = await createOwnerUserService(adminId, payload);
-  return reply.code(201).send(created);
+    const created = await createOwnerUserService(adminId, payload);
+    return reply.code(201).send(created);
 }
 
 export async function updateOwnerHandler(req, reply) {
-  const adminId = req.user.id;
-  const { ownerId } = req.params;
-  const payload = req.body || {};
+    const adminId = req.user.id;
+    const { ownerId } = req.params;
+    const payload = req.body || {};
 
-  const updated = await updateOwnerUserService(adminId, ownerId, payload);
-  return reply.send(updated);
+    const updated = await updateOwnerUserService(adminId, ownerId, payload);
+    return reply.send(updated);
 }
 
 export async function deleteOwnerHandler(req, reply) {
-  const adminId = req.user.id;
-  const { ownerId } = req.params;
+    const adminId = req.user.id;
+    const { ownerId } = req.params;
 
-  const result = await deleteOwnerUserService(adminId, ownerId);
-  return reply.send(result);
+    const result = await deleteOwnerUserService(adminId, ownerId);
+    return reply.send(result);
+}
+
+
+
+export async function getMeHandler(request, reply) {
+  const userId = request.user?.id;
+  const user = await getMeService(userId);
+  return reply.send({ user });
+}
+
+export async function updateMeHandler(request, reply) {
+  const userId = request.user?.id;
+  const updated = await updateMeService(userId, request.body || {});
+  return reply.send({ user: updated });
+}
+
+export async function changeMyPasswordHandler(request, reply) {
+  const userId = request.user?.id;
+  const { currentPassword, newPassword } = request.body || {};
+  await changeMyPasswordService(userId, { currentPassword, newPassword });
+  return reply.send({ ok: true });
 }

@@ -269,6 +269,7 @@ function normalizeVenue(raw) {
 
   const id = raw.id || raw._id;
 
+
   // Ưu tiên các field manager* do BE trả về từ mapVenue()
   const owner =
     raw.owner ||
@@ -295,6 +296,7 @@ function normalizeVenue(raw) {
       raw.managerName ||
       "",
     address: raw.address || "",
+    courtsCount: Number(raw.courtsCount) || 1,
     images: raw.images || raw.photos || [],
     avatarImage: raw.avatarImage || (raw.images && raw.images[0]?.url) || "",
     openTime: raw.openTime || raw.openHour || "05:00",
@@ -392,6 +394,7 @@ export default function AdminVenuesPage() {
     closeTime: "22:00",
     priceRules: [],
     status: "active",
+    courtsCount: 1,
   });
 
   // ====== CALL API LOAD LIST ======
@@ -707,6 +710,7 @@ export default function AdminVenuesPage() {
       closeTime: "22:00",
       priceRules: [],
       status: "active",
+      courtsCount: 1,
     });
     setIsVenueFormOpen(true);
   }
@@ -726,6 +730,8 @@ export default function AdminVenuesPage() {
       closeTime: venue.closeTime || "22:00",
       priceRules: venue.priceRules || [],
       status: venue.status || "active",
+      courtsCount: venue.courtsCount ?? 1,
+
     });
     setIsVenueFormOpen(true);
 
@@ -860,6 +866,8 @@ export default function AdminVenuesPage() {
       avatarImage: venueFormValues.avatarImage || "",
       images: venueFormValues.images || [],
       status: venueFormValues.status,
+      courtsCount: Number(venueFormValues.courtsCount) || 1,
+
     };
 
     // Payload config: openTime / closeTime / priceRules
@@ -1526,10 +1534,7 @@ function OwnerFormDialog({ mode, values, onChange, onClose, onSubmit }) {
           <h3 className="text-base md:text-lg font-semibold text-gray-900">
             {title}
           </h3>
-          <p className="mt-1 text-xs text-gray-500">
-            Thông tin tài khoản chủ sân. Mật khẩu ở đây chỉ là mock, sau này sẽ
-            dùng form đăng ký / gửi mail kích hoạt thật.
-          </p>
+
 
           <div className="mt-4 space-y-3">
             <div>
@@ -1586,7 +1591,7 @@ function OwnerFormDialog({ mode, values, onChange, onClose, onSubmit }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-800">
-                  Mật khẩu (mock)
+                  Mật khẩu 
                 </label>
                 <input
                   type="password"
@@ -1727,12 +1732,7 @@ function VenueFormDialog({
             <h3 className="text-base md:text-lg font-semibold text-gray-900">
               {title}
             </h3>
-            <p className="mt-1 text-xs text-gray-500">
-              Form này mock đầy đủ các field tối thiểu: thông tin sân, chủ sân,
-              list ảnh, giờ mở / giờ đóng và cấu hình giá theo khung giờ. Sau
-              này ta map thẳng field với backend <code>venueId</code> /{" "}
-              <code>courtId</code>.
-            </p>
+
           </div>
 
           {/* Thông tin cơ bản */}
@@ -1776,6 +1776,20 @@ function VenueFormDialog({
                 </select>
               </div>
             </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-800">
+                Số lượng sân con
+              </label>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={values.courtsCount ?? 1}
+                onChange={(e) => onChange("courtsCount", e.target.value)}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-black focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+
 
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-800">

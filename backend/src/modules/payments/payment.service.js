@@ -6,6 +6,8 @@ import { Booking } from "../../models/booking.model.js";
 import { BookingStatus } from "../../models/bookingStatus.model.js";
 import { Payment } from "../../models/payment.model.js";
 import { PaymentStatus } from "../../models/paymentStatus.model.js";
+import { createNotification } from "../notifications/notification.service.js";
+import { Venue } from "../../models/venue.model.js";
 
 function normalizePaymentMethod(method) {
   if (!method) return null;
@@ -621,11 +623,50 @@ export async function confirmPaymentFromReturn({ provider, orderId, success }) {
   await payment.save();
 
   if (payment.booking && success) {
-    // Chỉ đổi booking khi thanh toán thành công
     const confirmedId = await getBookingStatusId("CONFIRMED");
     payment.booking.status = confirmedId;
     await payment.booking.save();
+
+    // load venue để lấy tên + owner
+    const venue = await Venue.findById(payment.booking.venue)
+      .select("_id name manager")
+      .lean();
+
+    // 1) NOTI cho CUSTOMER: đặt sân thành công
+    await createNotification({
+      userId: payment.booking.user,
+      type: "BOOKING_CONFIRMED",
+      level: "INFO",
+      title: "Đặt sân thành công",
+      content: `Bạn đã thanh toán thành công đơn ${payment.booking.code}${venue?.name ? ` tại "${venue.name}"` : ""}.`,
+      data: {
+        bookingId: String(payment.booking._id),
+        bookingCode: payment.booking.code,
+        venueId: venue?._id ? String(venue._id) : null,
+        route: "/history",
+      },
+      dedupeKey: `BOOKING_CONFIRMED:${payment.booking._id}`,
+    });
+
+    // 2) NOTI cho OWNER: có lượt đặt sân mới
+    if (venue?.manager) {
+      await createNotification({
+        userId: venue.manager,
+        type: "NEW_BOOKING",
+        level: "INFO",
+        title: "Có lượt đặt sân mới",
+        content: `Sân "${venue.name}" vừa có booking mới (${payment.booking.code}).`,
+        data: {
+          bookingId: String(payment.booking._id),
+          bookingCode: payment.booking.code,
+          venueId: String(venue._id),
+          route: "/owner/bookings",
+        },
+        dedupeKey: `NEW_BOOKING:${payment.booking._id}`,
+      });
+    }
   }
+
 
   return {
     provider: normalized,

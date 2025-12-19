@@ -29,6 +29,28 @@ const MOCK_BOOKINGS = [
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
+
+function resolveImageUrl(raw) {
+  if (!raw) return "";
+  if (typeof raw !== "string") return "";
+  if (raw.startsWith("/uploads/")) {
+    return `${API_BASE}${raw}`; // http://localhost:4000/api/uploads/...
+  }
+  return raw; // /courts/... trong public
+}
+
+function pickVenueAvatar(venue) {
+  if (!venue) return "";
+
+  // 1) avatarImage (đúng theo content model bạn đang dùng)
+  if (venue.avatarImage) return venue.avatarImage;
+
+  // 2) fallback qua images (primary -> first)
+  const imgs = Array.isArray(venue.images) ? venue.images : [];
+  const primary = imgs.find((x) => x?.isPrimary && x?.url)?.url;
+  return primary || imgs[0]?.url || "";
+}
+
 // map 1 booking từ API -> card
 function mapApiBookingToCard(b) {
   let startTime = "";
@@ -45,10 +67,13 @@ function mapApiBookingToCard(b) {
   const dateObj = b.date
     ? new Date(b.date)
     : b.createdAt
-    ? new Date(b.createdAt)
-    : null;
+      ? new Date(b.createdAt)
+      : null;
 
   const internalId = b.id || b._id || null;
+
+  const venueAvatarRaw = pickVenueAvatar(b?.venue);
+  const venueAvatar = resolveImageUrl(venueAvatarRaw)
 
   return {
     // id dùng cho React key + so khớp trong FE
@@ -65,9 +90,9 @@ function mapApiBookingToCard(b) {
     statusLabel: b.bookingStatusLabel || b.paymentStatusLabel || "",
     rating: 4.5,
     reviews: 50,
-    imageUrl: "/history/mock1.png",
     totalAmount: b.totalAmount ?? b.price ?? 0,
     _dateValue: dateObj ? dateObj.getTime() : 0,
+    imageUrl: venueAvatar || "/history/mock1.png",
   };
 }
 
@@ -98,9 +123,9 @@ function mergeDetailToBooking(detail, fallback) {
     venue: detail.venue || fallback.venue,
     items: detail.items || [],
     slotCount: typeof detail.slotCount === "number" ? detail.slotCount : undefined,
-    extraServicesNote:
-      detail.extraServicesNote ||
-      "Dịch vụ thêm (nếu có) được hiển thị trên hóa đơn thanh toán.",
+    addons: detail.addons || fallback.addons || { items: [], total: 0 },
+    note: detail.note ?? fallback.note,
+
 
     payment: detail.payment || fallback.payment,
   };
@@ -123,8 +148,13 @@ function InvoiceModal({ booking, loading, error, onClose }) {
     items = [],
     venue,
     slotCount,
-    extraServicesNote,
+    note,
   } = booking;
+
+  const addonsText =
+    typeof note === "string" && note.toLowerCase().startsWith("addons:")
+      ? note.replace(/^addons:\s*/i, "")
+      : "";
 
   const hasAmount =
     typeof totalAmount === "number" &&
@@ -137,10 +167,11 @@ function InvoiceModal({ booking, loading, error, onClose }) {
     typeof slotCount === "number"
       ? slotCount
       : items.reduce(
-          (sum, it) => sum + (it.slotEnd - it.slotStart + 1 || 0),
-          0
-        );
-
+        (sum, it) => sum + (it.slotEnd - it.slotStart + 1 || 0),
+        0
+      );
+  const addons = booking?.addons || { items: [], total: 0 };
+  const hasAddons = Array.isArray(addons.items) && addons.items.length > 0;
   return (
     <div
       className="fixed inset-0 z-40 flex items-center justify-center bg-black/40"
@@ -270,14 +301,61 @@ function InvoiceModal({ booking, loading, error, onClose }) {
             </div>
           )}
 
-          {/* Dịch vụ thêm - ghi chung chung */}
+          {/* Dịch vụ thêm - addons */}
           <div className="rounded-xl bg-[#fafafa] border border-[#eee] px-3 py-2.5 space-y-1">
             <p className="text-[11px] text-[#777]">Dịch vụ thêm</p>
-            <p className="text-[11px] text-[#555]">
-              {extraServicesNote ||
-                "Nếu bạn có chọn nước uống, dụng cụ hoặc dịch vụ phụ trợ, thông tin chi tiết sẽ thể hiện trên hóa đơn thanh toán."}
-            </p>
+
+            {!hasAddons ? (
+              addonsText ? (
+                <p className="text-[11px] text-[#555]">{addonsText}</p>
+              ) : (
+                <p className="text-[11px] text-[#555]">Không có dịch vụ thêm.</p>
+              )
+            ) : (
+              <div className="mt-1 space-y-1.5">
+                {addons.items.map((a, idx) => {
+                  const qty = Number(a.quantity || 0);
+                  const unit = Number(a.unitPrice || 0);
+                  const line =
+                    a.lineTotal != null ? Number(a.lineTotal) : unit * qty;
+
+                  return (
+                    <div
+                      key={a.addonId || a.id || `${a.name || "addon"}-${idx}`}
+                      className="flex items-start justify-between gap-3"
+                    >
+                      <div>
+                        <p className="text-xs font-medium text-black">
+                          {a.name || "Dịch vụ thêm"}
+                        </p>
+                        {a.category && (
+                          <p className="text-[11px] text-[#777]">{a.category}</p>
+                        )}
+                        <p className="text-[11px] text-[#777]">
+                          Số lượng: {qty}
+                          {unit ? ` · Đơn giá: ${unit.toLocaleString("vi-VN")} VND` : ""}
+                        </p>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-black">
+                          {Number(line || 0).toLocaleString("vi-VN")} VND
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className="border-t border-[#eee] pt-2 flex items-center justify-between">
+                  <span className="text-xs md:text-sm font-semibold">Tổng dịch vụ thêm</span>
+                  <span className="text-xs md:text-sm font-semibold text-black">
+                    {Number(addons.total || 0).toLocaleString("vi-VN")} VND
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
+
 
           {/* Tổng thanh toán */}
           <div className="border-t border-[#eee] pt-3 space-y-1">
@@ -401,7 +479,7 @@ export default function BookingHistoryPage() {
         const token =
           typeof window !== "undefined"
             ? localStorage.getItem("pptoken") ||
-              localStorage.getItem("pp_token")
+            localStorage.getItem("pp_token")
             : null;
 
         console.log("[History] token =", token);
@@ -431,7 +509,7 @@ export default function BookingHistoryPage() {
           if (res.status === 401) {
             setAuthError(
               (json && json.message) ||
-                "Phiên đăng nhập đã hết hạn hoặc không hợp lệ."
+              "Phiên đăng nhập đã hết hạn hoặc không hợp lệ."
             );
           }
           // Giữ mock
@@ -561,10 +639,10 @@ export default function BookingHistoryPage() {
         prev.map((b) =>
           b.id === cancelBooking.id
             ? {
-                ...b,
-                status: "cancelled",
-                statusLabel: "Đã hủy",
-              }
+              ...b,
+              status: "cancelled",
+              statusLabel: "Đã hủy",
+            }
             : b
         )
       );
@@ -619,10 +697,10 @@ export default function BookingHistoryPage() {
         prev.map((b) =>
           b.id === cancelBooking.id
             ? {
-                ...b,
-                status: status.code || "cancelled",
-                statusLabel: status.label || "Đã hủy",
-              }
+              ...b,
+              status: status.code || "cancelled",
+              statusLabel: status.label || "Đã hủy",
+            }
             : b
         )
       );
