@@ -633,20 +633,23 @@ export async function confirmPaymentFromReturn({ provider, orderId, success }) {
       .lean();
 
     // 1) NOTI cho CUSTOMER: đặt sân thành công
-    await createNotification({
-      userId: payment.booking.user,
-      type: "BOOKING_CONFIRMED",
-      level: "INFO",
-      title: "Đặt sân thành công",
-      content: `Bạn đã thanh toán thành công đơn ${payment.booking.code}${venue?.name ? ` tại "${venue.name}"` : ""}.`,
-      data: {
-        bookingId: String(payment.booking._id),
-        bookingCode: payment.booking.code,
-        venueId: venue?._id ? String(venue._id) : null,
-        route: "/history",
-      },
-      dedupeKey: `BOOKING_CONFIRMED:${payment.booking._id}`,
-    });
+    if (!payment.booking.isGuestBooking) {
+      await createNotification({
+        userId: payment.booking.user,
+        type: "BOOKING_CONFIRMED",
+        level: "INFO",
+        title: "Đặt sân thành công",
+        content: `Bạn đã thanh toán thành công đơn ${payment.booking.code}${venue?.name ? ` tại "${venue.name}"` : ""
+          }.`,
+        data: {
+          bookingId: String(payment.booking._id),
+          bookingCode: payment.booking.code,
+          venueId: venue?._id ? String(venue._id) : null,
+          route: "/history",
+        },
+        dedupeKey: `BOOKING_CONFIRMED:${payment.booking._id}`,
+      });
+    }
 
     // 2) NOTI cho OWNER: có lượt đặt sân mới
     if (venue?.manager) {

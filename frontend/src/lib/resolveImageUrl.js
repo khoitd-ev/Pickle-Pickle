@@ -1,5 +1,5 @@
 // frontend/src/lib/resolveImageUrl.js
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
 
 export function resolveImageUrl(raw) {
   if (!raw) return "";

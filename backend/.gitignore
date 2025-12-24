@@ -56,3 +56,29 @@ profile-*
 profile*
 *clinic*
 *flamegraph*
+
+
+
+# env
+**/.env
+**/.env.production
+**/.env.local
+
+# node
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+
+# uploads & data
+backend/src/uploads
+uploads
+mongo-data
+redis-data
+
+# models (LLM)
+models/*.gguf
+models/**
+
+# logs
+*.log

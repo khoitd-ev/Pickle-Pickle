@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import CourtCard from "./CourtCard";
 import Container from "../../layout/Container";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
 
 // ===== MOCK GIỮ NGUYÊN =====
 const courts = [

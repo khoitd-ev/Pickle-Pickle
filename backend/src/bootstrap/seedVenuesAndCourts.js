@@ -1,4 +1,8 @@
 // src/bootstrap/seedVenuesAndCourts.js
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
 import { Venue } from "../models/venue.model.js";
 import { Court } from "../models/court.model.js";
 import { VenueOpenHour } from "../models/venueOpenHour.model.js";
@@ -7,6 +11,10 @@ import { VenueHoliday } from "../models/venueHoliday.model.js";
 import { BlackoutSlot } from "../models/blackoutSlot.model.js";
 import { SplitRule } from "../models/splitRule.model.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ====== GIỮ NGUYÊN DEFAULT SEED TEXT/ASSET CŨ ======
 const COMMON_DESCRIPTION =
   "PicklePickle là cụm sân pickleball với mặt sân cứng, vạch kẻ chuẩn thi đấu và hệ thống đèn chiếu sáng ban đêm. Phù hợp cho cả người chơi mới và những buổi đấu giao hữu.";
 
@@ -43,24 +51,80 @@ const COMMON_FEATURE_IMAGES = [
 
 const COMMON_AMENITY_IMAGES = Array(5).fill("/courts/mockupduplicate.png");
 
+// ===== helpers giữ nguyên =====
 function buildCourtNames(count) {
   const n = Math.max(1, Number(count) || 1);
   return Array.from({ length: n }, (_, i) => `Sân ${i + 1}`);
 }
 
+function normalizeImages(images) {
+  
+  const arr = Array.isArray(images) ? images : [];
+  return arr
+    .map((x) => String(x || "").trim())
+    .filter(Boolean);
+}
+
 /**
- * Tạo sẵn 3 cụm sân:
- *  - PicklePickle Thủ Đức
- *  - PicklePickle Quận 1
- *  - PicklePickle Quận 7
+ * dataVenue.json có thể là:
+ * - JSON array chuẩn: [ {...}, {...} ]
+ * - hoặc “loose JSON”: nhiều object nối tiếp nhau (}{) / xen mảng
  *
+ */
+function loadVenueSeedsFromDataVenue() {
+  const filePath = path.join(__dirname, "dataVenue.json");
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Missing dataVenue.json at: ${filePath}`);
+  }
+
+  const raw = fs.readFileSync(filePath, "utf-8").trim();
+  if (!raw) return [];
+
+  // 1) thử parse chuẩn
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && typeof parsed === "object") return [parsed];
+  } catch (_) {
+    // ignore
+  }
+
+  // 2) fallback loose
+  let t = raw;
+  t = t.replace(/}\s*\n\s*\{/g, "},{");
+  t = t.replace(/}\s*\n\s*\[/g, "},\n");
+  t = t.replace(/\]\s*$/g, "");
+
+  const wrapped = `[${t}]`;
+
+  let arr;
+  try {
+    arr = JSON.parse(wrapped);
+  } catch (err) {
+    throw new Error(
+      `dataVenue.json is not parseable. Please convert to valid JSON array.\n` +
+        `Error: ${err?.message || err}`
+    );
+  }
+
+  // flatten 
+  const flat = [];
+  for (const item of arr) {
+    if (Array.isArray(item)) flat.push(...item);
+    else if (item && typeof item === "object") flat.push(item);
+  }
+  return flat;
+}
+
+/**
+ * Tạo venues từ dataVenue.json
  * ownerUser: user default có role OWNER để gán vào field manager.
  */
 export async function ensureVenuesAndCourts(ownerUser) {
   const existingVenueCount = await Venue.countDocuments();
 
   if (existingVenueCount > 0) {
-    // Nếu đã có venue rồi nhưng chưa có manager thì patch cho gọn
+    
     if (ownerUser) {
       await Venue.updateMany(
         { manager: { $exists: false } },
@@ -77,56 +141,46 @@ export async function ensureVenuesAndCourts(ownerUser) {
 
   console.log(" Seeding venues, courts, open hours, price rules...");
 
+
+  const venueSeedsRaw = loadVenueSeedsFromDataVenue();
+
   
-  const venueSeeds = [
-    {
-      name: "PicklePickle Thủ Đức",
-      district: "Thủ Đức",
-      address: "123 Võ Văn Ngân, Thủ Đức, TP.HCM",
-      latitude: 10.851,
-      longitude: 106.754,
-      heroTagline: "Cụm 4 sân Pickleball ngoài trời tại trung tâm Thủ Đức",
-      phone: "0909 123 456",
-      basePricePerHour: 80000,
-      courtsCount: 4,
-      images: ["/courts/sample1.png", "/courts/sample2.png", "/courts/sample3.png"],
-    },
-    {
-      name: "PicklePickle Quận 1",
-      district: "Quận 1",
-      address: "45 Lê Lợi, Quận 1, TP.HCM",
-      latitude: 10.775,
-      longitude: 106.7,
-      heroTagline: "Cụm 3 sân Pickleball ngay trung tâm Quận 1",
-      phone: "0909 234 567",
-      basePricePerHour: 90000,
-      courtsCount: 3,
-      images: ["/courts/sample2.png", "/courts/sample3.png", "/courts/sample1.png"],
-    },
-    {
-      name: "PicklePickle Quận 7",
-      district: "Quận 7",
-      address: "88 Nguyễn Thị Thập, Quận 7, TP.HCM",
-      latitude: 10.737,
-      longitude: 106.719,
-      heroTagline: "Cụm 4 sân Pickleball tại khu Nam Sài Gòn",
-      phone: "0909 345 678",
-      basePricePerHour: 100000,
-      courtsCount: 4,
-      images: ["/courts/sample2.png", "/courts/sample1.png", "/courts/sample3.png"],
-    },
-  ];
+  const venueSeeds = venueSeedsRaw
+    .map((v) => {
+      const name = String(v?.name || "").trim();
+      const address = String(v?.address || "").trim();
+      if (!name || !address) return null;
+
+      return {
+        name,
+        district: String(v?.district || "").trim(),
+        address,
+        latitude: typeof v?.latitude === "number" ? v.latitude : Number(v?.latitude),
+        longitude:
+          typeof v?.longitude === "number" ? v.longitude : Number(v?.longitude),
+
+        heroTagline: String(v?.heroTagline || "").trim(),
+        phone: String(v?.phone || "").trim(),
+
+        basePricePerHour: Number(v?.basePricePerHour) || 0,
+        courtsCount: Number(v?.courtsCount) || 1,
+
+        // images: string[] 
+        images: normalizeImages(v?.images),
+      };
+    })
+    .filter(Boolean);
 
   for (const v of venueSeeds) {
     const courtsCount = Math.max(1, Number(v.courtsCount) || 1);
 
-    // 1) Venue
+    // 1) Venue 
     const venue = await Venue.create({
       name: v.name,
       district: v.district,
       address: v.address,
-      latitude: v.latitude,
-      longitude: v.longitude,
+      latitude: Number.isFinite(v.latitude) ? v.latitude : undefined,
+      longitude: Number.isFinite(v.longitude) ? v.longitude : undefined,
       timeZone: "Asia/Ho_Chi_Minh",
       slotMinutes: 60,
       isActive: true,
@@ -159,6 +213,11 @@ export async function ensureVenuesAndCourts(ownerUser) {
     });
 
     console.log(`  -> Created venue: ${venue.name}`);
+
+    // ==========================
+    // 
+    // Courts, Open Hour, Price rule, holiday, blackout, splitrule
+    // ==========================
 
     // 2) Courts: tạo theo courtsCount => "Sân 1..n"
     const courtNames = buildCourtNames(courtsCount);

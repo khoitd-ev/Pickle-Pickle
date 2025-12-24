@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
 
 function resolveImageUrl(raw) {
   if (!raw) return "";
@@ -14,7 +14,6 @@ function resolveImageUrl(raw) {
   }
   return raw; // /courts/... trong public
 }
-
 
 export default function CourtHeroSection({ court, venueId }) {
   const router = useRouter();

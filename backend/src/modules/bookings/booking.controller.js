@@ -10,6 +10,7 @@ import {
   cancelUserBooking, 
 } from "./booking.service.js";
 import { Venue } from "../../models/venue.model.js";
+import { User } from "../../models/user.model.js";
 
 // POST /api/bookings
 export async function createBookingHandler(request, reply) {
@@ -275,3 +276,51 @@ export async function cancelUserBookingHandler(request, reply) {
   }
 }
 
+
+
+export async function createGuestBookingHandler(request, reply) {
+  try {
+    const body = request.body || {};
+    const { guestInfo } = body;
+
+    if (!guestInfo?.fullName || !guestInfo?.phone) {
+      return reply.code(400).send({
+        message: "Guest name and phone are required",
+      });
+    }
+
+    const guestUser = await User.findOne({
+      email: "guest@picklepickle.local",
+    });
+
+    if (!guestUser) {
+      return reply.code(500).send({ message: "Guest system user not found" });
+    }
+
+    const payload = {
+      userId: guestUser._id,
+      venueId: body.venueId,
+      date: body.date,
+      courts: body.courts,
+      discount: body.discount,
+      note: body.note,
+      addons: body.addons,
+      addonsTotal: Number(body.addonsTotal || 0),
+      guestInfo: {
+        fullName: `${guestInfo.fullName.trim()} (Khách)`,
+        phone: guestInfo.phone,
+        email: guestInfo.email || "",
+      },
+      isGuestBooking: true,
+    };
+
+    const result = await createBookingFromSlots(payload);
+
+    return reply.code(201).send({ data: result });
+  } catch (err) {
+    request.log.error(err);
+    return reply.code(500).send({
+      message: "Không thể tạo booking cho khách",
+    });
+  }
+}

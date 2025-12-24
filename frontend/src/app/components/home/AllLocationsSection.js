@@ -4,7 +4,7 @@ import Link from "next/link";
 import Container from "../layout/Container";
 import { useEffect, useMemo, useState } from "react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
 
 // ===== MOCK (GIỮ NGUYÊN LIST, CHỈ ĐỔI FIELD country -> address để đúng format) =====
 const leftLocations = [

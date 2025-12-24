@@ -8,6 +8,16 @@ const bookingSchema = new Schema(
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     venue: { type: Schema.Types.ObjectId, ref: "Venue", required: true },
     status: { type: Schema.Types.ObjectId, ref: "BookingStatus", required: true },
+    guestInfo: {
+      fullName: { type: String },
+      phone: { type: String },
+      email: { type: String },
+    },
+    isGuestBooking: {
+      type: Boolean,
+      default: false,
+    },
+
 
     grossAmount: { type: Number },  // tổng trước giảm
     discount: { type: Number },  // tổng giảm

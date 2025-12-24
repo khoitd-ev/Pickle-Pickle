@@ -5,7 +5,7 @@ import Image from "next/image";
 import { apiFetch } from "../../../../lib/apiClient";
 
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
 
 function resolveImageUrl(url) {
   if (!url) return "";

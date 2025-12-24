@@ -26,7 +26,7 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
-    depends_on: [mongo, redis]
+    depends_on: [mongo, redis, llm]
 
   mongo:
     image: mongo:7.0.14
@@ -34,6 +34,22 @@ services:
 
   redis:
     image: redis:7.2.4-alpine
+
+  llm:
+    image: ghcr.io/ggml-org/llama.cpp:full
+    container_name: vn_llm
+    volumes:
+      - ./models:/models:ro
+    ports:
+      - "8082:8080"
+    command: >
+      --server
+      -m /models/Arcee-VyLinh.Q4_K_M.gguf
+      -c 2048
+      --host 0.0.0.0
+      --port 8080
+      -t 2
+    restart: unless-stopped
 
 volumes:
   mongo-data:

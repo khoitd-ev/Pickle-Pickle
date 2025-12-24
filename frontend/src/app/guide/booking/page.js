@@ -1,4 +1,4 @@
-import OwnerStaticShell, { Section } from "../../../(static)/_components/OwnerStaticShell";
+import OwnerStaticShell, { Section } from "../../(static)/_components/OwnerStaticShell";
 
 function Tip({ children }) {
   return (

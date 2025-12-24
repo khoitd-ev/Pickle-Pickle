@@ -153,7 +153,7 @@ export class SlotConflictError extends Error {
 // ================== Service: tạo booking ==================
 
 export async function createBookingFromSlots(payload) {
-  const { userId, venueId, date, courts, discount = 0, note, addonsTotal = 0, addons } = payload;
+  const { userId, venueId, guestInfo, isGuestBooking = false, date, courts, discount = 0, note, addonsTotal = 0, addons } = payload;
 
   if (!userId) throw new Error("userId is required");
   if (!venueId) throw new Error("venueId is required");
@@ -196,7 +196,10 @@ export async function createBookingFromSlots(payload) {
     discount: discount || 0,
     totalAmount: 0,
     note: note || "",
+    guestInfo: guestInfo || undefined,
+    isGuestBooking: !!isGuestBooking,
   });
+
 
   // 2) Tạo BookingSlot cho từng slot
   const bookingSlotsDocs = [];
@@ -555,7 +558,7 @@ export async function getVenueAvailability({ venueId, dateStr }) {
     venueId,
     date: dateStr,
     slotMinutes,
-    weekday, 
+    weekday,
     openTime: minutesToTimeStr(baseStartHour * 60),
     closeTime: minutesToTimeStr(baseEndHourExclusive * 60),
     isHoliday: false,
@@ -1006,41 +1009,39 @@ export async function getOwnerDailyOverview({ ownerId, dateStr, venueId }) {
     const endHour = slotEnd + 1; // vì hiển thị đến HH+1:00
 
     if (statusDoc.isCancel) {
-      // 1) ĐÃ HỦY: luôn ưu tiên hiển thị "Đã huỷ"
       normalizedStatus = "cancelled";
     } else if (statusDoc.isFinal) {
-      // 2) Các trạng thái final như COMPLETED / NO_SHOW
       normalizedStatus = "completed";
     } else {
-      // 3) Các trạng thái chưa final (PENDING, CONFIRMED, ...)
-      //    -> dựa vào ngày + giờ để quyết định pending / completed
-
       if (dateStr < todayStr) {
-        // Ngày đã qua
         normalizedStatus = "completed";
       } else if (dateStr > todayStr) {
-        // Ngày tương lai
         normalizedStatus = "pending";
       } else {
-        // Cùng ngày hôm nay
-        if (currentHour >= endHour) {
-          // Qua giờ đặt sân -> Đã xong
-          normalizedStatus = "completed";
-        } else {
-          // Chưa đến giờ / đang trong khung giờ -> vẫn coi là "Đã đặt"
-          normalizedStatus = "pending";
-        }
+        if (currentHour >= endHour) normalizedStatus = "completed";
+        else normalizedStatus = "pending";
       }
     }
 
+    // ================== FIX GUEST PHONE/NAME ==================
+    const isGuest = Boolean(booking.isGuestBooking);
+    const guest = booking.guestInfo || {};
+
+    const customerName = isGuest
+      ? (guest.fullName || "Khách")
+      : (user.fullName || user.name || "Khách");
+
+    const phone = isGuest
+      ? (guest.phone || "")
+      : (user.phoneNumber || user.phone || "");
 
     return {
       id: item._id.toString(),
       code: booking.code,
       courtId: court._id?.toString(),
       courtName: court.name || "Sân",
-      customerName: user.fullName || user.name || "Khách",
-      phone: user.phoneNumber || user.phone || "",
+      customerName,
+      phone,
       startTime,
       endTime,
       slotStartIndex: slotStart,
@@ -1052,6 +1053,7 @@ export async function getOwnerDailyOverview({ ownerId, dateStr, venueId }) {
       bookedAt: dateStr,
     };
   });
+
 
   return {
     venue: {
@@ -1177,21 +1179,30 @@ export async function getAdminDailyOverview({ dateStr, venueId }) {
       } else if (dateStr > todayStr) {
         normalizedStatus = "pending";
       } else {
-        if (currentHour >= endHour) {
-          normalizedStatus = "completed";
-        } else {
-          normalizedStatus = "pending";
-        }
+        if (currentHour >= endHour) normalizedStatus = "completed";
+        else normalizedStatus = "pending";
       }
     }
+
+    // ================== FIX GUEST PHONE/NAME ==================
+    const isGuest = Boolean(booking.isGuestBooking);
+    const guest = booking.guestInfo || {};
+
+    const customerName = isGuest
+      ? (guest.fullName || "Khách")
+      : (user.fullName || user.name || "Khách");
+
+    const phone = isGuest
+      ? (guest.phone || "")
+      : (user.phoneNumber || user.phone || "");
 
     return {
       id: item._id.toString(),
       code: booking.code,
       courtId: court._id?.toString(),
       courtName: court.name || "Sân",
-      customerName: user.fullName || user.name || "Khách",
-      phone: user.phoneNumber || user.phone || "",
+      customerName,
+      phone,
       startTime,
       endTime,
       slotStartIndex: slotStart,
@@ -1203,6 +1214,7 @@ export async function getAdminDailyOverview({ dateStr, venueId }) {
       bookedAt: dateStr,
     };
   });
+
 
   return {
     venue: {

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
 
 function resolveImageUrl(raw) {
   if (!raw) return "/courts/sample1.png";

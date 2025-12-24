@@ -1,0 +1,82 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - web
+      - api
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE}
+    env_file:
+      - ./frontend/.env.production
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env.production
+    expose:
+      - "4000"
+    depends_on:
+      - mongo
+      - redis
+      - llm
+    volumes:
+      - uploads-data:/app/uploads
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7.0.14
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2.4-alpine
+    restart: unless-stopped
+
+  llm:
+    image: ghcr.io/ggml-org/llama.cpp:full
+    entrypoint: [ "/app/llama-server" ]
+    command:
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8080"
+      - "-m"
+      - "/models/Arcee-VyLinh.Q4_K_M.gguf"
+      - "-c"
+      - "1024"
+      - "-np"
+      - "1"
+      - "-tb"
+      - "2"
+      - "--cache-ram"
+      - "1024"
+      - "-t"
+      - "2"
+      - "--n-gpu-layers"
+      - "0"
+      - "--threads-http"
+      - "1"
+    volumes:
+      - ./models:/models:ro
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  uploads-data:

@@ -62,6 +62,8 @@ const FALLBACK_PRODUCTS = [
   },
 ];
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
+
 export default function AddonsSection({ onChange, venueId }) {
   const [activeTab, setActiveTab] = useState("all");
   const [quantities, setQuantities] = useState({}); // { productId: number }
@@ -80,7 +82,7 @@ export default function AddonsSection({ onChange, venueId }) {
         setError("");
 
         // /addons?venueId=...
-        const base = `${process.env.NEXT_PUBLIC_API_BASE}/addons`;
+        const base = `${API_BASE}/addons`;
         const url =
           venueId && typeof venueId === "string"
             ? `${base}?venueId=${encodeURIComponent(venueId)}`
@@ -187,7 +189,7 @@ export default function AddonsSection({ onChange, venueId }) {
   const resolveImageSrc = (raw) => {
     if (!raw) return "/booking/water.svg"; // fallback
     if (raw.startsWith("/uploads/")) {
-      return `${process.env.NEXT_PUBLIC_API_BASE}${raw}`;
+      return `${API_BASE}${raw}`;
     }
     return raw; // các icon tĩnh trong /public/booking
   };

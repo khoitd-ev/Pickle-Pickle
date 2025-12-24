@@ -4,6 +4,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
+import ChatWidget from "../chat/ChatWidget";
+
 
 export default function LayoutClient({ children }) {
   const pathname = usePathname();
@@ -49,6 +51,7 @@ export default function LayoutClient({ children }) {
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
+      <ChatWidget />
     </>
   );
 }

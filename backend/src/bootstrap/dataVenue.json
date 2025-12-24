@@ -1,0 +1,587 @@
+{
+  "name": "Kỳ Hoà 2 Sport Cub",
+  "district": "Quận 10",
+  "address": "796 Đ. Sư Vạn Hạnh, Phường 10 (Quận 10), Quận 10, TP.HCM, Vietnam",
+  "latitude": null,
+  "longitude": null,
+  "phone": "028 2217 1819",
+  "heroTagline": "Cụm 2 sân Pickleball tại Quận 10",
+  "basePricePerHour": 100000,
+  "courtsCount": 2,
+  "images": [
+    "/courts/sample1.png",
+    "/courts/sample2.png",
+    "/courts/sample3.png"
+  ],
+  "description": "Kỳ Hoà 2 Sport Cub là địa điểm chơi pickleball tại TP. Hồ Chí Minh. Sân có 2 sân ngoài trời với mặt sân cứng, vạch kẻ cố định và có lưới di động. Khu vực sân có nhà vệ sinh và hệ thống đèn chiếu sáng, phù hợp chơi buổi tối.",
+  "featuresLeft": [
+    "Vạch kẻ cố định",
+    "Lưới di động"
+  ],
+  "featuresRight": [
+    "Mặt sân cứng",
+    "2 sân ngoài trời"
+  ],
+  "amenitiesLeft": [
+    "Nhà vệ sinh"
+  ],
+  "amenitiesRight": [
+    "Sân có đèn chiếu sáng"
+  ]
+}
+{
+  "name": "CLB HAPPY Pickleball & Billard",
+  "district": "Nhà Bè",
+  "address": "5 Đ. Đào Sư Tích, Phước Kiển, Nhà Bè, TP.HCM, Vietnam",
+  "latitude": null,
+  "longitude": null,
+  "heroTagline": "Cụm 3 sân Pickleball trong nhà tại Nhà Bè",
+  "phone": "0853 141 516",
+  "basePricePerHour": 100000,
+  "courtsCount": 3,
+  "images": [
+    "/courts/sample1.png",
+    "/courts/sample2.png",
+    "/courts/sample3.png"
+  ],
+  "description": "CLB HAPPY Pickleball & Billard là địa điểm chơi pickleball tại Nhà Bè, TP. Hồ Chí Minh. Sân có 3 sân trong nhà với mặt sân cứng, vạch kẻ và lưới cố định. Khu vực sân được trang bị nhà vệ sinh và hệ thống đèn chiếu sáng, phù hợp cho luyện tập và thi đấu giao hữu trong mọi khung giờ.",
+  "featuresLeft": [
+    "Vạch kẻ cố định",
+    "Lưới cố định"
+  ],
+  "featuresRight": [
+    "Mặt sân cứng",
+    "3 sân trong nhà"
+  ],
+  "amenitiesLeft": [
+    "Nhà vệ sinh"
+  ],
+  "amenitiesRight": [
+    "Sân có đèn chiếu sáng"
+  ]
+}
+{
+  "name": "Court One Club at New World Saigon Hotel",
+  "district": "Quận 1",
+  "address": "76 Đường Lê Lai, Bến Thành, Quận 1, TP.HCM, Vietnam",
+  "latitude": null,
+  "longitude": null,
+  "heroTagline": "Cụm 4 sân Pickleball cao cấp tại trung tâm Quận 1",
+  "phone": "(408) 412-9759",
+  "basePricePerHour": 150000,
+  "courtsCount": 4,
+  "images": [
+    "/courts/sample1.png",
+    "/courts/sample2.png",
+    "/courts/sample3.png"
+  ],
+  "description": "Court One Club tại khách sạn New World Saigon là cụm sân pickleball cao cấp ở trung tâm TP. Hồ Chí Minh. Sân có 4 sân ngoài trời với mặt sân cứng, vạch kẻ và lưới cố định. Đây là sân riêng tư, có thể đặt trước và phục vụ đầy đủ tiện ích như khu thay đồ, nhà vệ sinh, nước uống, đèn chiếu sáng và cửa hàng dụng cụ.",
+  "featuresLeft": [
+    "Vạch kẻ cố định",
+    "Lưới cố định"
+  ],
+  "featuresRight": [
+    "Mặt sân cứng",
+    "4 sân ngoài trời"
+  ],
+  "amenitiesLeft": [
+    "Đồ ăn và nước uống",
+    "Phòng thay đồ"
+  ],
+  "amenitiesRight": [
+    "Nhà vệ sinh",
+    "Sân có đèn chiếu sáng",
+    "Cửa hàng dụng cụ"
+  ]
+}
+{
+  "name": "HCMC Cultural Palace for Labors",
+  "district": "Quận 1",
+  "address": "55B Đ. Nguyễn Thị Minh Khai, Bến Thành, Quận 1, TP.HCM, Vietnam",
+  "latitude": null,
+  "longitude": null,
+  "heroTagline": "Cụm 2 sân Pickleball trong nhà tại Quận 1",
+  "phone": "0906 999 969",
+  "basePricePerHour": 100000,
+  "courtsCount": 2,
+  "images": [
+    "/courts/sample1.png",
+    "/courts/sample2.png",
+    "/courts/sample3.png"
+  ],
+  "description": "HCMC Cultural Palace for Labors là một trong những địa điểm chơi pickleball phổ biến tại TP. Hồ Chí Minh. Sân có 2 sân trong nhà với mặt sân cứng, vạch kẻ và lưới cố định. Người chơi có thể sử dụng nhà vệ sinh và hệ thống đèn chiếu sáng, phù hợp cho cả luyện tập và thi đấu.",
+  "featuresLeft": [
+    "Vạch kẻ cố định",
+    "Lưới cố định"
+  ],
+  "featuresRight": [
+    "Mặt sân cứng",
+    "2 sân trong nhà"
+  ],
+  "amenitiesLeft": [
+    "Nhà vệ sinh"
+  ],
+  "amenitiesRight": [
+    "Sân có đèn chiếu sáng"
+  ]
+}
+{
+  "name": "HitPark Pickleball",
+  "district": "Quận 2",
+  "address": "1 Đường Số 26, Khu phố 1, An Khánh, Quận 2, TP.HCM, Vietnam",
+  "latitude": null,
+  "longitude": null,
+  "heroTagline": "Cụm 2 sân Pickleball ngoài trời tại Quận 2",
+  "phone": "0869 030 127",
+  "basePricePerHour": 90000,
+  "courtsCount": 2,
+  "images": [
+    "/courts/sample1.png",
+    "/courts/sample2.png",
+    "/courts/sample3.png"
+  ],
+  "description": "HitPark Pickleball là địa điểm chơi pickleball ngoài trời tại Quận 2, TP. Hồ Chí Minh. Sân có 2 sân ngoài trời với mặt sân cứng, vạch kẻ và lưới cố định. Người chơi cần trả phí một lần để sử dụng sân, đồng thời được trang bị nhà vệ sinh và hệ thống đèn chiếu sáng.",
+  "featuresLeft": [
+    "Vạch kẻ cố định",
+    "Lưới cố định"
+  ],
+  "featuresRight": [
+    "Mặt sân cứng",
+    "2 sân ngoài trời"
+  ],
+  "amenitiesLeft": [
+    "Nhà vệ sinh"
+  ],
+  "amenitiesRight": [
+    "Sân có đèn chiếu sáng"
+  ]
+}
+{
+  "name": "Phú Mỹ Hưng Pickleball",
+  "district": "Quận 7",
+  "address": "7B Tân Phú, Quận 7, TP.HCM, Vietnam",
+  "latitude": null,
+  "longitude": null,
+  "heroTagline": "Cụm 3 sân Pickleball ngoài trời tại Quận 7",
+  "phone": null,
+  "basePricePerHour": 90000,
+  "courtsCount": 3,
+  "images": [
+    "/courts/sample1.png",
+    "/courts/sample2.png",
+    "/courts/sample3.png"
+  ],
+  "description": "Sân Pickleball Phú Mỹ Hưng là địa điểm chơi pickleball tại Quận 7, TP. Hồ Chí Minh. Sân có 3 sân ngoài trời với mặt sân cứng, vạch kẻ cố định và lưới di động. Người chơi có thể sử dụng nhà vệ sinh và hệ thống đèn chiếu sáng.",
+  "featuresLeft": [
+    "Vạch kẻ cố định",
+    "Lưới di động"
+  ],
+  "featuresRight": [
+    "Mặt sân cứng",
+    "3 sân ngoài trời"
+  ],
+  "amenitiesLeft": [
+    "Nhà vệ sinh"
+  ],
+  "amenitiesRight": [
+    "Sân có đèn chiếu sáng"
+  ]
+}
+{
+  "name": "PickleBall Vườn Lan",
+  "district": "Quận 6",
+  "address": "21 Đường Số 34, Khu IV, Phường 10, Quận 6, TP.HCM, Vietnam",
+  "latitude": null,
+  "longitude": null,
+  "heroTagline": "Cụm 4 sân Pickleball ngoài trời tại Quận 6",
+  "phone": "0986 778 806",
+  "basePricePerHour": 80000,
+  "courtsCount": 4,
+  "images": [
+    "/courts/sample1.png",
+    "/courts/sample2.png",
+    "/courts/sample3.png"
+  ],
+  "description": "PickleBall Vườn Lan là một trong những địa điểm chơi pickleball phổ biến tại TP. Hồ Chí Minh. Sân có 4 sân ngoài trời với mặt sân cứng, vạch kẻ và lưới cố định. Người chơi có thể sử dụng nhà vệ sinh và hệ thống đèn chiếu sáng.",
+  "featuresLeft": [
+    "Vạch kẻ cố định",
+    "Lưới cố định"
+  ],
+  "featuresRight": [
+    "Mặt sân cứng",
+    "4 sân ngoài trời"
+  ],
+  "amenitiesLeft": [
+    "Nhà vệ sinh"
+  ],
+  "amenitiesRight": [
+    "Sân có đèn chiếu sáng"
+  ]
+}
+{
+  "name": "PickoLand Thảo Điền Pickleball Club",
+  "district": "Quận 2",
+  "address": "188A6 Nguyễn Văn Hưởng, Thảo Điền, Quận 2, TP.HCM, Vietnam",
+  "latitude": null,
+  "longitude": null,
+  "heroTagline": "Cụm 5 sân Pickleball ngoài trời tại Thảo Điền",
+  "phone": "0903 396 059",
+  "basePricePerHour": 120000,
+  "courtsCount": 5,
+  "images": [
+    "/courts/sample1.png",
+    "/courts/sample2.png",
+    "/courts/sample3.png"
+  ],
+  "description": "PickoLand Thảo Điền Pickleball Club là cụm sân pickleball ngoài trời tại Thảo Điền, TP. Hồ Chí Minh. Sân có 5 sân với mặt sân cứng, vạch kẻ và lưới cố định. Sân yêu cầu hội viên, có thể đặt trước và được trang bị nhà vệ sinh, đèn chiếu sáng và cửa hàng dụng cụ.",
+  "featuresLeft": [
+    "Vạch kẻ cố định",
+    "Lưới cố định"
+  ],
+  "featuresRight": [
+    "Mặt sân cứng",
+    "5 sân ngoài trời"
+  ],
+  "amenitiesLeft": [
+    "Nhà vệ sinh"
+  ],
+  "amenitiesRight": [
+    "Sân có đèn chiếu sáng",
+    "Cửa hàng dụng cụ"
+  ]
+}
+{
+  "name": "Rudal Pickleball Center",
+  "district": "Thủ Đức",
+  "address": "28 Đ. 12, P. An Khánh, Thủ Đức, TP.HCM, Vietnam",
+  "latitude": null,
+  "longitude": null,
+  "heroTagline": "Cụm 6 sân Pickleball ngoài trời tại Thủ Đức",
+  "phone": "0938 375 999",
+  "basePricePerHour": 120000,
+  "courtsCount": 6,
+  "images": [
+    "/courts/sample1.png",
+    "/courts/sample2.png",
+    "/courts/sample3.png"
+  ],
+  "description": "Rudal Pickleball Center là một trong những cụm sân pickleball lớn tại TP. Hồ Chí Minh. Sân có 6 sân ngoài trời với mặt sân cứng, vạch kẻ và lưới cố định. Người chơi cần trả phí để sử dụng sân và có thể tiếp cận các tiện ích như nhà vệ sinh, đèn chiếu sáng, huấn luyện viên và cửa hàng dụng cụ.",
+  "featuresLeft": [
+    "Vạch kẻ cố định",
+    "Lưới cố định"
+  ],
+  "featuresRight": [
+    "Mặt sân cứng",
+    "6 sân ngoài trời"
+  ],
+  "amenitiesLeft": [
+    "Nhà vệ sinh",
+    "Huấn luyện viên"
+  ],
+  "amenitiesRight": [
+    "Sân có đèn chiếu sáng",
+    "Cửa hàng dụng cụ"
+  ]
+}
+{
+  "name": "Sân Cầu Lông Trần Não",
+  "district": "Quận 2",
+  "address": "22 Đ. Số 24, An Khánh, Quận 2, TP.HCM, Vietnam",
+  "latitude": null,
+  "longitude": null,
+  "heroTagline": "Cụm 3 sân Pickleball trong nhà tại Quận 2",
+  "phone": "0962 427 872",
+  "basePricePerHour": 80000,
+  "courtsCount": 3,
+  "images": [
+    "/courts/sample1.png",
+    "/courts/sample2.png",
+    "/courts/sample3.png"
+  ],
+  "description": "Sân Cầu Lông Trần Não là địa điểm chơi pickleball trong nhà tại Quận 2, TP. Hồ Chí Minh. Sân có 3 sân trong nhà với mặt sân cứng, vạch kẻ cố định và lưới di động. Người chơi cần trả phí một lần để sử dụng sân, đồng thời có nhà vệ sinh và đèn chiếu sáng.",
+  "featuresLeft": [
+    "Vạch kẻ cố định",
+    "Lưới di động"
+  ],
+  "featuresRight": [
+    "Mặt sân cứng",
+    "3 sân trong nhà"
+  ],
+  "amenitiesLeft": [
+    "Nhà vệ sinh"
+  ],
+  "amenitiesRight": [
+    "Sân có đèn chiếu sáng"
+  ]
+}
+{
+  "name": "Thạnh Mỹ Lợi Pickleball",
+  "district": "Quận 2",
+  "address": "Đường Thạnh Mỹ Lợi, Bình Trưng, Quận 2, TP.HCM, Vietnam",
+  "latitude": null,
+  "longitude": null,
+  "heroTagline": "Cụm 3 sân Pickleball ngoài trời tại Thạnh Mỹ Lợi",
+  "phone": null,
+  "basePricePerHour": 0,
+  "courtsCount": 3,
+  "images": [
+    "/courts/sample1.png",
+    "/courts/sample2.png",
+    "/courts/sample3.png"
+  ],
+  "description": "Sân Pickleball Thạnh Mỹ Lợi là địa điểm chơi pickleball ngoài trời tại Quận 2, TP. Hồ Chí Minh. Sân có 3 sân ngoài trời với mặt sân cứng, vạch kẻ cố định và lưới di động. Người chơi có thể sử dụng nhà vệ sinh và hệ thống đèn chiếu sáng.",
+  "featuresLeft": [
+    "Vạch kẻ cố định",
+    "Lưới di động"
+  ],
+  "featuresRight": [
+    "Mặt sân cứng",
+    "3 sân ngoài trời"
+  ],
+  "amenitiesLeft": [
+    "Nhà vệ sinh"
+  ],
+  "amenitiesRight": [
+    "Sân có đèn chiếu sáng"
+  ]
+}
+{
+  "name": "Thu Thiem USC Q2 Basketball Tennis Court",
+  "district": "Thủ Đức",
+  "address": "13 D.91, Thạnh Mỹ Lợi Ward, Thủ Đức, TP.HCM, Vietnam",
+  "latitude": null,
+  "longitude": null,
+  "heroTagline": "Cụm 3 sân Pickleball miễn phí tại Thủ Thiêm",
+  "phone": null,
+  "basePricePerHour": 0,
+  "courtsCount": 3,
+  "images": [
+    "/courts/sample1.png",
+    "/courts/sample2.png",
+    "/courts/sample3.png"
+  ],
+  "description": "Thu Thiem USC Q2 Basketball Tennis Court là cụm sân pickleball ngoài trời tại Thủ Thiêm, TP. Hồ Chí Minh. Sân có 3 sân với mặt sân cứng, vạch kẻ cố định và lưới di động. Đây là sân miễn phí, phù hợp cho người chơi cộng đồng.",
+  "featuresLeft": [
+    "Vạch kẻ cố định",
+    "Lưới di động"
+  ],
+  "featuresRight": [
+    "Mặt sân cứng",
+    "3 sân ngoài trời"
+  ],
+  "amenitiesLeft": [],
+  "amenitiesRight": []
+}
+[
+  {
+    "name": "VietNam Pickleball Hoàng Gia SaiGon 102",
+    "district": "Quận 12",
+    "address": "TL43, Thạnh Lộc, Quận 12, TP.HCM, Vietnam",
+    "latitude": null,
+    "longitude": null,
+    "heroTagline": "Cụm 2 sân pickleball ngoài trời, yêu cầu hội viên",
+    "phone": "0906 999 969",
+    "basePricePerHour": 100000,
+    "courtsCount": 2,
+    "images": [
+      "/courts/sample1.png",
+      "/courts/sample2.png",
+      "/courts/sample3.png"
+    ],
+    "description": "VietNam Pickleball Hoàng Gia SaiGon 102 là một trong những địa điểm chơi pickleball được yêu thích tại TP. Hồ Chí Minh. Sân có 2 sân cứng ngoài trời với vạch kẻ và lưới cố định. Người chơi cần đăng ký hội viên để tham gia. Khu sân được trang bị nhà vệ sinh và hệ thống đèn chiếu sáng phục vụ chơi buổi tối.",
+    "featuresLeft": [
+      "Vạch kẻ cố định",
+      "Lưới cố định"
+    ],
+    "featuresRight": [
+      "Mặt sân cứng",
+      "2 sân ngoài trời"
+    ],
+    "amenitiesLeft": [
+      "Nhà vệ sinh"
+    ],
+    "amenitiesRight": [
+      "Đèn chiếu sáng ban đêm"
+    ]
+  },
+  {
+    "name": "002 Pickleball Club",
+    "district": "Thủ Đức",
+    "address": "28 Thảo Điền, Thảo Điền, Thủ Đức City, TP.HCM, Vietnam",
+    "latitude": null,
+    "longitude": null,
+    "heroTagline": "Cụm 5 sân pickleball trong nhà, dành cho hội viên",
+    "phone": "0764 002 002",
+    "basePricePerHour": 120000,
+    "courtsCount": 5,
+    "images": [
+      "/courts/sample2.png",
+      "/courts/sample3.png",
+      "/courts/sample1.png"
+    ],
+    "description": "002 Pickleball Club là cụm sân pickleball trong nhà hiện đại tại Thảo Điền, TP. Hồ Chí Minh. Khu sân gồm 5 sân cứng trong nhà với vạch kẻ và lưới cố định theo tiêu chuẩn thi đấu. Người chơi cần đăng ký hội viên để sử dụng sân. Sân có đầy đủ nhà vệ sinh và hệ thống đèn chiếu sáng.",
+    "featuresLeft": [
+      "Vạch kẻ cố định",
+      "Lưới cố định"
+    ],
+    "featuresRight": [
+      "Mặt sân cứng",
+      "5 sân trong nhà"
+    ],
+    "amenitiesLeft": [
+      "Nhà vệ sinh"
+    ],
+    "amenitiesRight": [
+      "Đèn chiếu sáng"
+    ]
+  },
+  {
+    "name": "CLB Nhà Minh Pickleball - Gò Vấp",
+    "district": "Gò Vấp",
+    "address": "509 Đ. Phạm Huy Thông, Phường 6, Gò Vấp, TP.HCM, Vietnam",
+    "latitude": null,
+    "longitude": null,
+    "heroTagline": "Cụm sân pickleball ngoài trời tại Gò Vấp",
+    "phone": null,
+    "basePricePerHour": 90000,
+    "courtsCount": 2,
+    "images": [
+      "/courts/sample1.png",
+      "/courts/sample2.png",
+      "/courts/sample3.png"
+    ],
+    "description": "CLB Nhà Minh Pickleball - Gò Vấp là địa điểm chơi pickleball ngoài trời tại TP. Hồ Chí Minh. Sân có mặt sân cứng và phù hợp cho người chơi phong trào. Khu vực có nhà vệ sinh, cửa hàng dụng cụ thể thao và hệ thống đèn chiếu sáng. Người chơi cần trả phí một lần để sử dụng sân.",
+    "featuresLeft": [
+      "Mặt sân cứng"
+    ],
+    "featuresRight": [
+      "Sân ngoài trời"
+    ],
+    "amenitiesLeft": [
+      "Nhà vệ sinh",
+      "Cửa hàng dụng cụ"
+    ],
+    "amenitiesRight": [
+      "Đèn chiếu sáng"
+    ]
+  },
+  {
+    "name": "East Saigon Pickleball Court",
+    "district": "Thủ Đức",
+    "address": "68 Đ. Liên Phường, An Phú, Thủ Đức, TP.HCM, Vietnam",
+    "latitude": null,
+    "longitude": null,
+    "heroTagline": "Cụm 4 sân pickleball ngoài trời tại khu Đông",
+    "phone": "0907 187 211",
+    "basePricePerHour": 100000,
+    "courtsCount": 4,
+    "images": [
+      "/courts/sample3.png",
+      "/courts/sample1.png",
+      "/courts/sample2.png"
+    ],
+    "description": "East Saigon Pickleball Court là cụm sân pickleball ngoài trời tại khu Đông TP. Hồ Chí Minh. Sân có 4 sân cứng ngoài trời với vạch kẻ cố định và lưới di động. Khu sân được trang bị hệ thống đèn chiếu sáng và nhà vệ sinh. Người chơi cần trả phí một lần để sử dụng sân.",
+    "featuresLeft": [
+      "Vạch kẻ cố định",
+      "Lưới di động"
+    ],
+    "featuresRight": [
+      "Mặt sân cứng",
+      "4 sân ngoài trời"
+    ],
+    "amenitiesLeft": [
+      "Đèn chiếu sáng"
+    ],
+    "amenitiesRight": [
+      "Nhà vệ sinh"
+    ]
+  },
+  {
+    "name": "Pickleball Cây Lộc Vừng Thủ Đức",
+    "district": "Thủ Đức",
+    "address": "1110 Đường Phạm Văn Đồng, Linh Đông, Thủ Đức City, TP.HCM, Vietnam",
+    "latitude": null,
+    "longitude": null,
+    "heroTagline": "Cụm 2 sân pickleball trong nhà tại Thủ Đức",
+    "phone": "0903 510 503",
+    "basePricePerHour": 90000,
+    "courtsCount": 2,
+    "images": [
+      "/courts/sample2.png",
+      "/courts/sample1.png",
+      "/courts/sample3.png"
+    ],
+    "description": "Pickleball Cây Lộc Vừng Thủ Đức là địa điểm chơi pickleball trong nhà tại TP. Hồ Chí Minh. Khu sân gồm 2 sân cứng trong nhà với vạch kẻ và lưới cố định. Người chơi cần trả phí một lần để sử dụng sân. Khu vực có nhà vệ sinh phục vụ người chơi.",
+    "featuresLeft": [
+      "Vạch kẻ cố định",
+      "Lưới cố định"
+    ],
+    "featuresRight": [
+      "Mặt sân cứng",
+      "2 sân trong nhà"
+    ],
+    "amenitiesLeft": [
+      "Nhà vệ sinh"
+    ],
+    "amenitiesRight": []
+  },
+  {
+    "name": "Sân Pickleball Phú Nhuận",
+    "district": "Phú Nhuận",
+    "address": "3 Lê Quý Đôn, Trần Quang Diệu, Phường 11, Phú Nhuận, TP.HCM, Vietnam",
+    "latitude": null,
+    "longitude": null,
+    "heroTagline": "Cụm 2 sân pickleball trong nhà tại Phú Nhuận",
+    "phone": "0933 492 933",
+    "basePricePerHour": 90000,
+    "courtsCount": 2,
+    "images": [
+      "/courts/sample1.png",
+      "/courts/sample2.png",
+      "/courts/sample3.png"
+    ],
+    "description": "Sân Pickleball Phú Nhuận là địa điểm chơi pickleball trong nhà tại TP. Hồ Chí Minh. Sân có 2 sân cứng trong nhà với vạch kẻ và lưới cố định. Khu vực có nhà vệ sinh phục vụ người chơi. Người chơi cần trả phí một lần để sử dụng sân.",
+    "featuresLeft": [
+      "Vạch kẻ cố định",
+      "Lưới cố định"
+    ],
+    "featuresRight": [
+      "Mặt sân cứng",
+      "2 sân trong nhà"
+    ],
+    "amenitiesLeft": [
+      "Nhà vệ sinh"
+    ],
+    "amenitiesRight": []
+  },
+  {
+    "name": "Titan Club 130 Chế Lan Viên",
+    "district": "Tân Phú",
+    "address": "130 Đ. Chế Lan Viên, Tây Thạnh, Tân Phú, TP.HCM, Vietnam",
+    "latitude": null,
+    "longitude": null,
+    "heroTagline": "Cụm 2 sân pickleball trong nhà tại Tân Phú",
+    "phone": "0866 000 133",
+    "basePricePerHour": 95000,
+    "courtsCount": 2,
+    "images": [
+      "/courts/sample3.png",
+      "/courts/sample2.png",
+      "/courts/sample1.png"
+    ],
+    "description": "Titan Club 130 Chế Lan Viên là cụm sân pickleball trong nhà tại TP. Hồ Chí Minh. Khu sân gồm 2 sân cứng trong nhà với vạch kẻ và lưới cố định. Khu vực có nhà vệ sinh phục vụ người chơi. Người chơi cần trả phí một lần để sử dụng sân.",
+    "featuresLeft": [
+      "Vạch kẻ cố định",
+      "Lưới cố định"
+    ],
+    "featuresRight": [
+      "Mặt sân cứng",
+      "2 sân trong nhà"
+    ],
+    "amenitiesLeft": [
+      "Nhà vệ sinh"
+    ],
+    "amenitiesRight": []
+  }
+]
+

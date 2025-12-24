@@ -14,6 +14,8 @@ const DEFAULT_FILTERS = {
   area: "",
 };
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
+
 export default function SearchPage() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [draftFilters, setDraftFilters] = useState(DEFAULT_FILTERS);
@@ -43,7 +45,7 @@ export default function SearchPage() {
         if (filters.area) params.set("area", filters.area);
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE}/venues?${params.toString()}`,
+          `${API_BASE}/venues?${params.toString()}`,
           { signal: controller.signal }
         );
 

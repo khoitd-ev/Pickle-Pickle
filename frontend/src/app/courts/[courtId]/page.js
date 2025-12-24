@@ -5,6 +5,8 @@ import CourtHeroSection from "@/app/components/courts/detail/CourtHeroSection";
 import CourtOverviewSection from "@/app/components/courts/detail/CourtOverviewSection";
 import CourtPricingSection from "@/app/components/courts/detail/CourtPricingSection";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
+
 export default function CourtDetailPage({ params }) {
   // Next.js 16 turbo: params là Promise
   const { courtId } = use(params); // thực chất là venueId
@@ -24,7 +26,7 @@ export default function CourtDetailPage({ params }) {
         setError("");
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE}/venues/${courtId}/detail`,
+          `${API_BASE}/venues/${courtId}/detail`,
           { cache: "no-store" } // tránh cache khi dev
         );
 

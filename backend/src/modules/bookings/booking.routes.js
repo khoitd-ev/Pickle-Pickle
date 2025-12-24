@@ -8,6 +8,7 @@ import {
   getAdminDailyOverviewHandler,
   getUserBookingDetailHandler,
   cancelUserBookingHandler,
+  createGuestBookingHandler ,
 } from "./booking.controller.js";
 import { requireAuth } from "../../shared/middlewares/requireAuth.js";
 
@@ -65,4 +66,6 @@ export async function bookingRoutes(app, opts) {
     { onRequest: [requireAuth] },
     cancelUserBookingHandler
   );
+
+  app.post("/bookings/guest", createGuestBookingHandler);
 }

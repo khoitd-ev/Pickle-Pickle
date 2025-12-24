@@ -1,6 +1,6 @@
 "use client";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
 
 export async function apiFetch(path, options = {}) {
   const token =
@@ -21,7 +21,6 @@ export async function apiFetch(path, options = {}) {
     headers["Content-Type"] = "application/json";
     body = JSON.stringify(body);
   }
- 
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;

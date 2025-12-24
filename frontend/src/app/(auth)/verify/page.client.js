@@ -3,16 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
+const CODE_LENGTH = 6;
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
-
-const GOOGLE_BTN_WIDTH = 180;
-const GOOGLE_BTN_HEIGHT = 36;
-
-// ---- Load Google Identity script once (per page) ----
 function loadGoogleScript() {
   return new Promise((resolve, reject) => {
     if (typeof window === "undefined") return reject(new Error("No window"));
@@ -35,12 +31,8 @@ function loadGoogleScript() {
   });
 }
 
-export default function LoginPage() {
-  const router = useRouter();
-
-  const [identifier, setIdentifier] = useState(""); // email hoặc phone
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+export default function VerifyPage() {
+  const [codes, setCodes] = useState(Array(CODE_LENGTH).fill(""));
   const [error, setError] = useState("");
 
   const [toast, setToast] = useState({
@@ -54,6 +46,13 @@ export default function LoginPage() {
     setTimeout(() => setToast((t) => ({ ...t, open: false })), 2500);
   };
 
+  const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const inputRefs = useRef([]);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const email = searchParams.get("email") || "";
 
   const googleBtnWrapRef = useRef(null);
   const [googleReady, setGoogleReady] = useState(false);
@@ -61,10 +60,7 @@ export default function LoginPage() {
   const finalizeAuthAndRedirect = (data) => {
     if (data?.token) localStorage.setItem("pp_token", data.token);
     if (data?.user) localStorage.setItem("pp_user", JSON.stringify(data.user));
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("pp-auth-changed"));
-    }
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("pp-auth-changed"));
 
     const role = data?.user?.role;
     if (role === "OWNER") router.push("/owner/dashboard");
@@ -94,31 +90,27 @@ export default function LoginPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ credential }),
               });
-
               const data = await res.json();
               if (!res.ok) throw new Error(data?.message || "Google login failed");
 
               finalizeAuthAndRedirect(data);
             } catch (e) {
-              setError(e?.message || "Google login failed");
+              setError(e.message);
             }
           },
-          ux_mode: "popup",
-          auto_select: false,
         });
-
 
         if (googleBtnWrapRef.current) {
           googleBtnWrapRef.current.innerHTML = "";
           window.google.accounts.id.renderButton(googleBtnWrapRef.current, {
             theme: "outline",
             size: "large",
-            width: GOOGLE_BTN_WIDTH,
+            width: 240,
           });
         }
 
         setGoogleReady(true);
-      } catch (e) {
+      } catch {
         setGoogleReady(false);
       }
     }
@@ -129,63 +121,105 @@ export default function LoginPage() {
     };
   }, [router]);
 
-
   const handleGoogleClick = () => {
     setError("");
-
     if (!GOOGLE_CLIENT_ID) return setError("Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID in frontend env");
     if (!googleReady || !googleBtnWrapRef.current) return setError("Google is not ready yet. Please try again.");
 
-    // Click trực tiếp wrapper
-    googleBtnWrapRef.current.click();
+    const realBtn = googleBtnWrapRef.current.querySelector("div[role=button], button");
+    if (realBtn) realBtn.click();
+    else setError("Google button not found. Please refresh the page.");
+  };
 
-    // Fallback nếu browser cần click element con
-    const realBtn = googleBtnWrapRef.current.querySelector("div[role=button], button, iframe");
-    if (realBtn && typeof realBtn.click === "function") realBtn.click();
+  const handleChange = (index) => (e) => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (!value) {
+      setCodes((prev) => {
+        const next = [...prev];
+        next[index] = "";
+        return next;
+      });
+      return;
+    }
+
+    value = value[value.length - 1];
+
+    setCodes((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+
+    setError("");
+
+    if (index < CODE_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index) => (e) => {
+    if (e.key === "Backspace" && !codes[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-
-    if (!identifier.trim() || !password.trim()) {
-      setError("Please enter your email and password");
+    if (!email) {
+      setError("Missing email. Please go back to register.");
       return;
     }
+    if (codes.some((c) => c === "")) {
+      setError("Please enter the full verification code");
+      return;
+    }
+    const code = codes.join("");
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetch(`${API_BASE}/auth/verify-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, password }),
+        body: JSON.stringify({ email, code }),
       });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        // NEW: nếu chưa verify -> chuyển sang verify + backend đã gửi OTP
-        if (data?.code === "EMAIL_NOT_VERIFIED") {
-          showToast(
-            data?.message || "Email chưa được xác minh. Mã xác minh đã được gửi lại.",
-            "error"
-          );
-          const targetEmail = data?.email || identifier;
-          router.push(`/verify?email=${encodeURIComponent(targetEmail)}`);
-          return;
-        }
-
-        throw new Error(data?.message || "Login failed");
-      }
+      if (!res.ok) throw new Error(data?.message || "Verify failed");
 
       finalizeAuthAndRedirect(data);
-
     } catch (err) {
       setError(err.message);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleResend = async () => {
+    if (!email) {
+      setError("Missing email. Please go back to register.");
+      return;
+    }
+    setResending(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/auth/resend-email-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Resend failed");
+      showToast(data?.message || "Đã gửi lại mã xác minh. Vui lòng kiểm tra email.", "success");
+
+    } catch (err) {
+      setError(err.message);
+      showToast(err.message, "error");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const hasError = !!error;
 
   return (
     <div className="relative w-full min-h-screen flex items-center justify-center bg-[#f4f4f4]">
@@ -201,30 +235,19 @@ export default function LoginPage() {
         </div>
       )}
 
-      <style jsx global>{`
-        .pp-google-hidden-wrap {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: ${GOOGLE_BTN_WIDTH}px;
-          height: ${GOOGLE_BTN_HEIGHT}px;
-          opacity: 0;
-          z-index: 50;
-          overflow: hidden;
-        }
+      <div
+        ref={googleBtnWrapRef}
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          top: "-9999px",
+          width: 1,
+          height: 1,
+          overflow: "hidden",
+        }}
+        aria-hidden="true"
+      />
 
-        .pp-google-hidden-wrap > div {
-          width: ${GOOGLE_BTN_WIDTH}px !important;
-          height: ${GOOGLE_BTN_HEIGHT}px !important;
-        }
-
-        .pp-google-hidden-wrap iframe {
-          width: ${GOOGLE_BTN_WIDTH}px !important;
-          height: ${GOOGLE_BTN_HEIGHT}px !important;
-        }
-      `}</style>
-
-      {/* WRAPPER */}
       <div className="relative w-[1100px] h-[580px]">
         {/* LAYER 1 */}
         <div className="absolute top-0 left-0 w-[560px] h-[580px] rounded-[40px] overflow-hidden z-0">
@@ -237,27 +260,21 @@ export default function LoginPage() {
             <Image src="/auth/layer2.png" alt="Card Background" fill className="object-cover" priority />
           </div>
 
-          {/* Nội dung form */}
           <div className="absolute inset-0 px-12 py-10 flex flex-col">
-            <h1 className="text-[24px] font-semibold text-center mb-6 text-gray-900">
-              Log in with your Account
+            <h1 className="text-[24px] font-semibold text-center mb-6 text-gray-900 tracking-wide">
+              Verify your email
             </h1>
 
-            {/* SOCIAL BUTTONS */}
+            {/* SOCIAL */}
             <div className="flex items-center justify-center gap-4 mb-6">
-
-              <div className="relative" style={{ width: GOOGLE_BTN_WIDTH, height: GOOGLE_BTN_HEIGHT }}>
-                <div ref={googleBtnWrapRef} className="pp-google-hidden-wrap" aria-hidden="true" />
-
-                <button
-                  type="button"
-                  onClick={handleGoogleClick}
-                  className="flex items-center gap-2 border border-gray-400 rounded-lg px-4 py-2 text-sm text-gray-800 hover:bg-gray-50 cursor-pointer transition w-full h-full justify-center"
-                >
-                  <Image src="/auth/googleIcon.svg" alt="" width={20} height={20} />
-                  <span>Log in Google</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleGoogleClick}
+                className="flex items-center gap-2 border border-gray-400 rounded-lg px-4 py-2 text-sm text-gray-800 hover:bg-gray-50 cursor-pointer transition"
+              >
+                <Image src="/auth/googleIcon.svg" alt="" width={20} height={20} />
+                <span>Log in Google</span>
+              </button>
 
               <button className="flex items-center gap-2 border border-gray-400 rounded-lg px-4 py-2 text-sm text-gray-800 hover:bg-gray-50 cursor-pointer transition">
                 <Image src="/auth/facebookIcon.svg" alt="" width={20} height={20} />
@@ -265,65 +282,72 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {/* DIVIDER */}
+            {/* Divider */}
             <div className="flex items-center justify-center gap-4 mb-6">
-              <span className="w-24 h-px bg-gray-300" />
+              <span className="w-28 h-px bg-gray-300" />
               <span className="text-xs text-gray-500">OR</span>
-              <span className="w-24 h-px bg-gray-300" />
+              <span className="w-28 h-px bg-gray-300" />
             </div>
 
-            {/* FORM INPUTS */}
-            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-              <div className="relative">
-                <input
-                  className="w-full border border-gray-400 rounded-lg px-4 py-3 pr-10 text-sm text-gray-800 placeholder-gray-500 bg-white/90 outline-none focus:ring-2 focus:ring-black focus:border-black transition-colors"
-                  placeholder="Email or phone"
-                  type="text"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                />
-                <Image
-                  src="/auth/emailIcon.svg"
-                  alt=""
-                  width={18}
-                  height={18}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 opacity-60"
-                />
+            {/* OTP FORM */}
+            <form onSubmit={handleSubmit} className="flex flex-col items-center mt-2">
+              <div className="text-[18px] tracking-[0.15em] text-gray-400">
+                CHECK YOUR <span className="text-gray-800">EMAIL</span>
               </div>
 
-              <div className="relative">
-                <input
-                  className="w-full border border-gray-400 rounded-lg px-4 py-3 pr-10 text-sm text-gray-800 placeholder-gray-500 bg-white/90 outline-none focus:ring-2 focus:ring-black focus:border-black transition-colors"
-                  placeholder="Password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <Image
-                  src="/auth/lockIcon.svg"
-                  alt=""
-                  width={18}
-                  height={18}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 opacity-60"
-                />
+              <p className="mt-2 text-[12px] text-gray-500 text-center">
+                We&apos;ve sent a verification code to{" "}
+                <span className="font-semibold">{email || "your email"}</span>.
+              </p>
+
+              <div className="mt-4 flex gap-3">
+                {codes.map((value, idx) => (
+                  <input
+                    key={idx}
+                    ref={(el) => (inputRefs.current[idx] = el)}
+                    value={value}
+                    onChange={handleChange(idx)}
+                    onKeyDown={handleKeyDown(idx)}
+                    maxLength={1}
+                    inputMode="numeric"
+                    className={`w-11 h-11 text-center text-lg rounded-md bg-white outline-none transition-colors ${hasError
+                      ? "border border-red-500 text-red-600"
+                      : "border border-gray-400 text-gray-800 focus:border-black focus:ring-2 focus:ring-black"
+                      }`}
+                  />
+                ))}
               </div>
 
-              {error && <p className="text-xs text-red-500 text-right mt-1">{error}</p>}
+              {hasError && (
+                <p className="mt-2 text-[11px] text-red-500 text-center px-4">{error}</p>
+              )}
 
-              <p className="mt-2 text-xs text-gray-500 text-right">
-                Don&apos;t you have an account?{" "}
-                <Link href="/register" className="text-blue-500 cursor-pointer hover:underline">
-                  click here.
-                </Link>
+              <p className="mt-2 text-[11px] text-gray-500">
+                Didn&apos;t receive the code?{" "}
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending}
+                  className="text-gray-800 underline-offset-2 hover:underline disabled:opacity-60"
+                >
+                  {resending ? "Resending..." : "Resend"}
+                </button>
               </p>
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="mt-4 w-1/2 mx-auto py-3 rounded-full bg-black text-white text-sm hover:bg-black/80 hover:shadow-lg transition duration-150 active:translate-y-[1px] disabled:opacity-60"
+                className="mt-5 w-[230px] py-3 rounded-full bg-black text-white text-sm hover:bg-black/80 hover:shadow-lg transition duration-150 active:translate-y-[1px] disabled:opacity-60"
               >
-                {submitting ? "Logging in..." : "CONFIRM"}
+                {submitting ? "Verifying..." : "CONFIRM"}
               </button>
+
+              <p className="mt-3 text-xs text-gray-500">
+                Already have an account?{" "}
+                <Link href="/login" className="italic text-gray-800 hover:指出 underline">
+                  Login.
+                </Link>
+              </p>
             </form>
           </div>
         </div>

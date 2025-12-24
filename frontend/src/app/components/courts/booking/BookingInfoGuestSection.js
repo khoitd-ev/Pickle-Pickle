@@ -7,14 +7,15 @@ export default function BookingInfoGuestSection({
   onChangeGuestInfo,
   courtName,
   courtAddress,
+  phoneNumber,
   date,
   pricingDetails = [],
   totalCourtPrice = 0,
   onEdit,
 }) {
   const handleChange = (field) => (e) => {
-    onChangeGuestInfo({
-      ...guestInfo,
+    onChangeGuestInfo?.({
+      ...(guestInfo || {}),
       [field]: e.target.value,
     });
   };
@@ -24,7 +25,7 @@ export default function BookingInfoGuestSection({
       {/* Header + nút chỉnh sửa */}
       <div className="flex items-start justify-between gap-4">
         <h1 className="text-xl md:text-2xl font-semibold text-black">
-          Thông tin khách & chi tiết đặt sân
+          Chi tiết đặt sân
         </h1>
 
         <button
@@ -36,63 +37,74 @@ export default function BookingInfoGuestSection({
         </button>
       </div>
 
-      {/* Thông tin khách hàng */}
-      <div className="space-y-3 text-sm border-b border-zinc-200 pb-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <InputField
-            label="Họ và tên"
-            placeholder="Nhập họ tên"
-            value={guestInfo.name || ""}
-            onChange={handleChange("name")}
-            required
-          />
-          <InputField
-            label="Email"
-            placeholder="example@email.com"
-            value={guestInfo.email || ""}
-            onChange={handleChange("email")}
-            required
-          />
-        </div>
+      {/* Guest (giống User block nhưng là input) */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-zinc-200 pb-4">
+        <div className="flex items-center gap-3">
+          {/* Avatar giả */}
+          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-[#f5f5f5]">
+            <span className="text-sm font-semibold text-black">
+              {guestInfo?.fullName?.[0] ?? "G"}
+            </span>
+          </div>
 
-        <InputField
-          label="Số điện thoại"
-          placeholder="Nhập số điện thoại"
-          value={guestInfo.phone || ""}
-          onChange={handleChange("phone")}
-          required
-        />
+          <div className="space-y-1">
+            <input
+              value={guestInfo?.fullName || ""}
+              onChange={handleChange("fullName")}
+              placeholder="Họ và tên"
+              className="w-full rounded-md border border-zinc-200 px-3 py-1.5 text-sm font-semibold text-black outline-none focus:border-zinc-400"
+            />
+
+            <input
+              value={guestInfo?.email || ""}
+              onChange={handleChange("email")}
+              placeholder="Email (không bắt buộc)"
+              className="w-full rounded-md border border-zinc-200 px-3 py-1.5 text-xs text-zinc-700 outline-none focus:border-zinc-400"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Thông tin đặt sân (chỉ đọc) */}
+      {/* Hàng 1–3: địa điểm, phone, ngày, địa chỉ sân */}
       <div className="space-y-3 text-sm">
-        <Field
-          label="Địa điểm"
-          value={courtName || "Sân PickoLand Thảo Điền"}
-        />
+        {/* Hàng 1: Địa điểm */}
+        <Field label="Địa điểm" value={courtName} />
 
+        {/* Hàng 2: Số điện thoại – Ngày */}
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Ngày" value={date || "19/11/2025"} icon="/search/calendarIcon.svg" />
+          <div className="space-y-1">
+            <p className="text-xs text-zinc-500">Số điện thoại</p>
+            <input
+              value={guestInfo?.phone || ""}
+              onChange={handleChange("phone")}
+              placeholder="Vui lòng nhập số điện thoại"
+              className="w-full rounded-lg border border-zinc-200 bg-[#fafafa] px-3 py-2 text-sm text-black outline-none focus:border-zinc-400"
+            />
+          </div>
+
           <Field
-            label="Địa chỉ sân"
-            value={
-              courtAddress ||
-              "188 A6 Nguyễn Văn Hưởng, Thảo Điền, TP. Thủ Đức, TP.HCM"
-            }
+            label="Ngày"
+            value={date}
+            icon="/search/calendarIcon.svg"
           />
         </div>
+
+        {/* Hàng 3: Địa chỉ sân */}
+        <Field label="Địa chỉ sân" value={courtAddress} />
       </div>
 
-      {/* Bảng khu vực / thời gian / giá tiền – chỉ đọc giống bản user */}
+      {/* Hàng 4+: dynamic Khu vực – Thời gian – Giá tiền */}
       {pricingDetails.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="rounded-2xl border border-zinc-200 bg-[#fafafa] p-4 space-y-2">
+            {/* header */}
             <div className="hidden md:grid grid-cols-[1.2fr_1.4fr_1fr] text-xs font-semibold text-zinc-600 pb-1 border-b border-zinc-200">
               <span>Khu vực</span>
               <span>Thời gian</span>
               <span>Giá tiền</span>
             </div>
 
+            {/* rows */}
             <div className="space-y-1">
               {pricingDetails.map((item) => (
                 <div
@@ -116,7 +128,7 @@ export default function BookingInfoGuestSection({
         </div>
       )}
 
-      {/* Tổng tiền sân */}
+      {/* Tổng tiền */}
       <div className="flex justify-end pt-1">
         <p className="text-sm md:text-base font-semibold text-black">
           Tổng tiền sân:&nbsp;
@@ -129,31 +141,16 @@ export default function BookingInfoGuestSection({
   );
 }
 
-/* --------- Sub components --------- */
-
-function InputField({ label, value, onChange, placeholder, required }) {
-  return (
-    <div className="space-y-1">
-      <p className="text-xs text-zinc-500">
-        {label} {required && <span className="text-red-500">*</span>}
-      </p>
-      <input
-        type="text"
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full rounded-lg border border-zinc-200 bg-[#fafafa] px-3 py-2 text-sm text-black outline-none focus:border-black"
-      />
-    </div>
-  );
-}
+/* --------- Sub components (GIỮ NGUYÊN) --------- */
 
 function Field({ label, value, icon }) {
   return (
     <div className="space-y-1">
       <p className="text-xs text-zinc-500">{label}</p>
       <div className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-[#fafafa] px-3 py-2">
-        <span className="text-sm text-black flex-1 truncate">{value}</span>
+        <span className="text-sm text-black flex-1 truncate">
+          {value || "-"}
+        </span>
         {icon && (
           <Image src={icon} alt="" width={16} height={16} className="shrink-0" />
         )}

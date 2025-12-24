@@ -279,3 +279,19 @@ body {
   align-items: center;
   gap: 6px;          /* nếu sau này có thêm nhiều icon (FB, X, …) */
 }
+
+
+/* ChatWidget scrollbar */
+.pp-chat-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.pp-chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pp-chat-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+}
+.pp-chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.20);
+}

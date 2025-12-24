@@ -332,21 +332,20 @@ export async function getOwnerBookingStats(
 
   const slots = await BookingSlot.aggregate(pipeline);
 
-  // Convert slotIndex -> label "5-7", "7-9", ...
+  // slotIndex trong DB đang là "giờ bắt đầu" (0..23 hoặc 5..22 tuỳ hệ thống)
+  // -> label theo block 2 tiếng: "18-20", "21-23", ...
   const data = slots.map((s) => {
-    const blockIndex = s._id; // 0,1,2,...
-    const startHour = 5 + blockIndex * (slotMinutes / 60);
+    const startHour = Number(s._id);
     const endHour = startHour + 2;
 
-    const label = `${Math.floor(startHour)}-${Math.floor(endHour)}`;
-
     return {
-      label,
+      label: `${String(startHour).padStart(2, "0")}-${String(endHour).padStart(2, "0")}`,
       value: s.count,
     };
   });
 
   return data;
+
 }
 
 // ================== OWNER BOOKING REPORT (for reports page) ==================
@@ -797,17 +796,18 @@ export async function getAdminBookingStats({
   const slots = await BookingSlot.aggregate(pipeline);
 
   const data = slots.map((s) => {
-    const startHour = 5 + s._id * (slotMinutes / 60);
+    const startHour = Number(s._id);
     const endHour = startHour + 2;
+
     return {
-      label: `${String(startHour).padStart(2, "0")}-${String(
-        endHour
-      ).padStart(2, "0")}`,
+      label: `${String(startHour).padStart(2, "0")}-${String(endHour).padStart(2, "0")}`,
       value: s.count,
     };
   });
 
+
   return data;
+
 }
 
 // ---------- Booking status donut (admin) ----------

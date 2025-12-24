@@ -182,10 +182,35 @@ async function ensureDefaultAccounts() {
   } else {
     console.log("Default owner already exists");
   }
+  // ---- 3) GUEST SYSTEM USER ----
+  let guest = await User.findOne({ email: "guest@picklepickle.local" });
+
+  if (!guest) {
+    guest = await User.create({
+      email: "guest@picklepickle.local",
+      fullName: "Guest System",
+      phone: "0000000000",
+      isActive: true,
+      emailVerified: true,
+      passwordHash: await hashPassword("guest"),
+    });
+
+    const customerRole = await Role.findOne({ code: "CUSTOMER" });
+    if (customerRole) {
+      await UserRole.create({
+        user: guest._id,
+        role: customerRole._id,
+      });
+    }
+
+    console.log("Default guest system user created");
+  }
+
 
   // QUAN TRỌNG: trả về để dùng tiếp
   return { admin, owner };
 }
+
 
 // ==== ENTRY POINT: được gọi trong server.js ==================
 export async function ensureDefaults() {

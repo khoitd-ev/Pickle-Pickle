@@ -13,6 +13,14 @@ const DEFAULT_HOURS = Array.from({ length: 18 }, (_, idx) => {
   return `${hour.toString().padStart(2, "0")}:00`;
 });
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
+
+function formatDateYMDLocal(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 export default function CourtBookingTimePage() {
   const params = useParams();
   const courtId = params?.courtId; // venueId
@@ -28,7 +36,7 @@ export default function CourtBookingTimePage() {
     (async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE}/venues/${courtId}/detail`
+          `${API_BASE}/venues/${courtId}/detail`
         );
         if (!res.ok) {
           console.error("Fetch venue detail failed", res.status);
@@ -59,7 +67,8 @@ export default function CourtBookingTimePage() {
   const [errorAvail, setErrorAvail] = useState("");
 
   const displayDate = currentDate.toLocaleDateString("vi-VN");
-  const dateParam = currentDate.toISOString().slice(0, 10); // YYYY-MM-DD
+  const dateParam = formatDateYMDLocal(currentDate);
+  // YYYY-MM-DD
 
   // ===== Fetch availability (poll 10s) =====
   useEffect(() => {
@@ -74,7 +83,7 @@ export default function CourtBookingTimePage() {
         setErrorAvail("");
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE}/venues/${courtId}/availability?date=${dateParam}`
+          `${API_BASE}/venues/${courtId}/availability?date=${dateParam}`
         );
 
         if (!res.ok) {
@@ -151,15 +160,15 @@ export default function CourtBookingTimePage() {
 
   const courtsRows = hasAvailability
     ? availability.courts.map((c, index) => ({
-        label: `Sân ${index + 1}`,
-        courtName: c.courtName,
-        slots: c.slots || [],
-      }))
+      label: `Sân ${index + 1}`,
+      courtName: c.courtName,
+      slots: c.slots || [],
+    }))
     : Array.from({ length: 3 }, (_, idx) => ({
-        label: `Sân ${idx + 1}`,
-        courtName: `Sân ${idx + 1}`,
-        slots: [],
-      }));
+      label: `Sân ${idx + 1}`,
+      courtName: `Sân ${idx + 1}`,
+      slots: [],
+    }));
 
   // ===== Chọn / bỏ chọn slot =====
   const toggleSlot = (rowIndex, colIndex) => {
@@ -269,11 +278,7 @@ export default function CourtBookingTimePage() {
 
     console.log("pp_token in booking page =", token);
 
-    if (!token) {
-      alert("Vui lòng đăng nhập để đặt sân.");
-      router.push(`/auth/login?redirect=/courts/${courtId}/booking`);
-      return;
-    }
+    const isGuest = !token;
 
     if (!availability || !Array.isArray(availability.courts)) {
       alert("Không có dữ liệu sân để tạo booking draft. Vui lòng tải lại trang.");
@@ -332,6 +337,8 @@ export default function CourtBookingTimePage() {
       courtPricingDetails: pricingDetails,
       courtTotal: totalPrice,
       addons: { items: [], total: 0 },
+      isGuest,
+      guestInfo: isGuest ? { fullName: "", phone: "", email: "" } : null,
     };
 
     if (typeof window !== "undefined") {
@@ -344,6 +351,11 @@ export default function CourtBookingTimePage() {
         slotsParam
       )}`
     );
+  };
+
+  const showToast = (message, type = "success") => {
+    setToast({ open: true, message, type });
+    setTimeout(() => setToast((t) => ({ ...t, open: false })), 2500);
   };
 
   const titleVenue = venueName || "PicklePickle";

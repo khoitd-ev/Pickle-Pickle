@@ -52,7 +52,7 @@ export default function Footer() {
                   height={24}
                 />
               </span>
-              <Link href="/policies" className="pp-footer__link">
+              <Link href="/policies/operation" className="pp-footer__link">
                 Chính sách hoạt động
               </Link>
             </li>
@@ -64,12 +64,12 @@ export default function Footer() {
           <h3 className="pp-footer__title">Thông tin</h3>
           <ul className="pp-footer__list">
             <li className="pp-footer__item-text">
-              <Link href="/guide" className="pp-footer__link">
+              <Link href="/guide/booking" className="pp-footer__link">
                 Hướng dẫn đặt sân
               </Link>
             </li>
             <li className="pp-footer__item-text">
-              <Link href="/refund-policy" className="pp-footer__link">
+              <Link href="/policies/refund" className="pp-footer__link">
                 Chính sách huỷ &amp; hoàn tiền
               </Link>
             </li>

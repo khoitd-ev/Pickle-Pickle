@@ -1,4 +1,4 @@
-import OwnerStaticShell, { Section } from "../../../(static)/_components/OwnerStaticShell";
+import OwnerStaticShell, { Section } from "../../(static)/_components/OwnerStaticShell";
 
 export default function Page() {
   const sections = [

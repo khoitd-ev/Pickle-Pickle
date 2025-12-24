@@ -24,6 +24,7 @@ import adminVenueContentRoutes from "./modules/venueContent/adminVenueContent.ro
 import notificationRoutes from "./modules/notifications/notification.routes.js";
 import { startBookingReminderJob } from "./jobs/bookingReminder.job.js";
 import homeRoutes from "./modules/home/home.routes.js";
+import { chatbotRoutes } from "./modules/chatbot/chatbot.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -96,6 +97,10 @@ export function buildApp() {
   app.register(notificationRoutes, { prefix: config.apiPrefix });
   
   app.register(homeRoutes, { prefix: config.apiPrefix });
+
+  app.register(chatbotRoutes, { prefix: config.apiPrefix });
+
+
   startBookingExpirationJob();
   startBookingReminderJob();
 
