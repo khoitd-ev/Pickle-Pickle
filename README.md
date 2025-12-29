@@ -17,10 +17,10 @@ git --version
 
 ### 1) Clone repository
 ```bash
-git clone https://github.com/Gay22222/PicklePickle-Booking-Pickleball-Court-Web-app.git
+git clone https://github.com/khoitd-ev/Pickle-Pickle.git
 ```
 ```bash
-cd PicklePickle-Booking-Pickleball-Court-Web-app
+cd Pickle-Pickle
 ```
 ### 2) Tạo file môi trường (.env.production)
 2.1 Frontend env
@@ -89,7 +89,7 @@ EMAIL_USER=YOUR_EMAIL@gmail.com
 EMAIL_PASS=YOUR_APP_PASSWORD
 
 # =======================
-# Payment Sandbox (optional)
+# Payment Sandbox (optional) /// sau khi deploy cần chuyển đổi localhost thành domain
 # =======================
 MOMO_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/create
 MOMO_REDIRECT_URL=http://localhost/payment/momo-return
@@ -129,7 +129,7 @@ mkdir -p models
 Download bằng wget 
 
 ```bash
-wget -c -O Arcee-VyLinh.Q4_K_M.gguf   https://huggingface.co/QuantFactory/Arcee-VyLinh-GGUF/resolve/main/Arcee-VyLinh.Q4_K_M.gguf
+wget -S --max-redirect=20 --header="Authorization: Bearer $HF_TOKEN" -O qwen3-0.6b-q4_k_m.gguf "https://huggingface.co/gvij/qwen3-0.6b-gguf/resolve/main/qwen3-0.6b-q4_k_m.gguf?download=true"
 ```
 
 
@@ -190,6 +190,8 @@ server {
   }
 }
 ```
+Lưu ý: Đây chỉ là cấu hình mẫu cho HTTP, Nếu muốn cấu hình HTTPS + Domain cần tinh chỉnh thêm
+
 ### 5) Run Production (Docker Compose)
 
 Chạy:
@@ -206,13 +208,8 @@ Xem logs:
 ```bash
 docker compose -f docker-compose.prod.yml logs -f --tail=100
 ```
-### 6) Health checks / Smoke tests
-6.1 Web
-```bash
-curl -I http://localhost/
-```
 
-6) Stop / Restart / Reset data
+### 6) Stop / Restart / Reset data
 
 Stop:
 ```bash
@@ -223,3 +220,20 @@ Stop + remove volumes (reset DB):
 ```bash
 docker compose -f docker-compose.prod.yml down -v
 ```
+
+### 7) Fix lỗi frontend Next.js không nhận được cấu hình .env.production
+
+Do Next.js khởi tạo dự án trước khi nhận được cấu hình trong .env nên đôi khi sẽ gặp lỗi không gọi được api của backend do biến trong cấu hình env khi khỏi tạo là undefinded
+
+Cách sửa : Thêm một cấu hình .env ở thư mục /Pickle-Pickle
+
+```bash
+nano .env
+```
+
+Nội dung là cấu hình env.production của frontend
+```bash
+NEXT_PUBLIC_API_BASE=/api
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com
+```
+

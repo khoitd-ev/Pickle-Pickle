@@ -435,7 +435,7 @@ export async function getVenueAvailability({ venueId, dateStr }) {
   }
 
   // 2) Lấy giờ mở cửa theo weekday (config open hours)
-  // ✅ dùng isoDay (1..7) để match data open hours thường config theo 1..7
+  //  dùng isoDay (1..7) để match data open hours thường config theo 1..7
   let openHour = await VenueOpenHour.findOne({
     venue: venueId,
     weekday: isoDay,

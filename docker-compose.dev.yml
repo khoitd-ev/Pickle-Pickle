@@ -38,18 +38,34 @@ services:
   llm:
     image: ghcr.io/ggml-org/llama.cpp:full
     container_name: vn_llm
+    entrypoint: ["/app/llama-server"]
     volumes:
       - ./models:/models:ro
     ports:
       - "8082:8080"
-    command: >
-      --server
-      -m /models/Arcee-VyLinh.Q4_K_M.gguf
-      -c 2048
-      --host 0.0.0.0
-      --port 8080
-      -t 2
+    command:
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8080"
+      - "-m"
+      - "/models/qwen3-0.6b-q4_k_m.gguf"
+      - "-c"
+      - "1024"
+      - "-t"
+      - "2"
+      - "-tb"
+      - "2"
+      - "--threads-http"
+      - "1"
+      - "-np"
+      - "1"
+      - "--cache-ram"
+      - "1024"
+      - "--n-gpu-layers"
+      - "0"
     restart: unless-stopped
+
 
 volumes:
   mongo-data:

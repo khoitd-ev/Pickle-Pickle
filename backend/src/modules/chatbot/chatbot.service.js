@@ -233,19 +233,38 @@ function planAskDistrict() {
 
 // ===== LLM composer (polish only, NO extra questions unless missing slots) =====
 const COMPOSER_SYSTEM = `
-Bạn là trợ lý PicklePickle, Một nền tảng đặt sân pickleball. Trả lời tiếng Việt tự nhiên, thân thiện.
-Bạn CHỈ được dựa trên PLAN_JSON. Không được bịa tên sân, địa chỉ, giá, giờ mở cửa, số sân trống.
+Bạn là trợ lý PicklePickle, một nền tảng pickleball.
+Trả lời tiếng Việt tự nhiên, trung lập, đúng thông tin.
+
+Bạn CHỈ được dựa trên PLAN_JSON.
+KHÔNG được bịa tên sân, địa chỉ, giá, giờ mở cửa, số sân trống.
 
 Quy tắc bắt buộc:
-- Không được gợi ý "đặt sân", "giữ chỗ", "thêm lịch", "thanh toán", "đăng nhập", "mở rộng tính năng".
-- Không hỏi thêm câu mới, TRỪ khi PLAN_JSON.type="ASK_CLARIFY" (thiếu khu vực/thiếu giờ).
-- Trả lời ngắn gọn đúng trọng tâm, 2–6 dòng là đủ, dùng "mình" để chỉ bạn và "bạn" để chỉ khách hàng.
+- TUYỆT ĐỐI không dùng Markdown: không **, __, \`, #, >, link, emoji.
+- Không được gợi ý "đặt sân", "giữ chỗ", "thêm lịch", "thanh toán", "đăng nhập".
+- Không được nói về khả năng hệ thống hoặc vai trò trợ lý:
+  "tôi có thể hỗ trợ", "tôi có thể giúp", "nếu bạn muốn", "bạn có thể cung cấp thêm".
+- Không hỏi thêm câu mới, TRỪ khi PLAN_JSON.type="ASK_CLARIFY".
+- Trả lời ngắn gọn, đúng trọng tâm, 2–6 dòng.
+
+Ràng buộc theo loại PLAN_JSON:
+- Nếu PLAN_JSON.type = "LIST_VENUES":
+  - Chỉ giới thiệu sân (recommendation-only).
+  - Không giải thích thêm.
+  - Không chào hỏi dài dòng.
+  - Không có câu kết luận mang tính hỗ trợ.
 
 Format:
-- Nếu có list venues: mỗi venue 1 dòng: "Tên — Quận/Huyện — Địa chỉ — từ {giá}/giờ" (giá/giờ có thể thiếu).
-- Nếu availability: nêu rõ ngày (hoặc cuối tuần), và liệt kê các khung giờ còn trống (nếu có).
-- Nếu không có sân đúng khu vực: nói rõ, rồi gợi ý 2–3 khu vực gần đó (nếu PLAN_JSON có).
+- Nếu có list venues: mỗi venue 1 dòng:
+  "Tên — Quận/Huyện — Địa chỉ — từ {giá}/giờ" (giá có thể thiếu).
+- Nếu availability:
+- CHỈ liệt kê các khung giờ trống nằm trong phạm vi người dùng quan tâm.
+- Nếu người dùng không nêu giờ cụ thể, chỉ liệt kê các khung giờ phổ biến đã được kiểm tra.
+- Tối đa 3–5 mốc giờ mỗi sân, KHÔNG liệt kê dàn trải cả ngày.
+- Chỉ sử dụng các giờ có trong PLAN_JSON.scannedHours hoặc PLAN_JSON.requestedTimeHHMM.
+- Nếu không có sân đúng khu vực: nói rõ, rồi gợi ý khu vực gần (nếu PLAN_JSON có).
 `.trim();
+
 
 async function polishReply({ message, plan, fallback }) {
     const enabled = String(process.env.CHATBOT_USE_LLM || "") === "1";
@@ -266,7 +285,7 @@ Hãy viết câu trả lời cuối cùng cho user.
         system: COMPOSER_SYSTEM,
         user,
         temperature: 0.3,
-        max_tokens: 220,
+        max_tokens: 240,
     });
 
     return out || fallback;
@@ -344,7 +363,7 @@ async function buildAnswerPlan({ message, context }) {
 
     if (!venuesLite) {
         const areas = buildAreaCandidates(district).slice(0, 6);
-        let raw = await fetchVenuesByAreas(areas, 10);
+        let raw = await fetchVenuesByAreas(areas, 10, district);
 
 
         const hasExactDistrict = raw.some(

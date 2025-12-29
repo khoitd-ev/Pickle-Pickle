@@ -58,7 +58,7 @@ services:
       - "--port"
       - "8080"
       - "-m"
-      - "/models/Arcee-VyLinh.Q4_K_M.gguf"
+      - "/models/qwen3-0.6b-q4_k_m.gguf"
       - "-c"
       - "1024"
       - "-np"

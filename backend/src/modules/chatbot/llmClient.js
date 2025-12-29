@@ -1,5 +1,5 @@
 // backend/src/modules/chatbot/llmClient.js
-export async function llmChat({ baseUrl, system, user, temperature = 0.25, max_tokens = 160 }) {
+export async function llmChat({ baseUrl, system, user, temperature = 0.3, max_tokens = 240 }) {
   if (!baseUrl) return "";
   const url = `${String(baseUrl).replace(/\/$/, "")}/v1/chat/completions`;
 
