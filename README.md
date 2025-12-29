@@ -1,4 +1,5 @@
-# PicklePickle-Booking-Pickleball-Court-Web-app
+# PicklePickle – Pickleball Court Booking Web Application
+
 
 ### 0) Prerequisites
 
@@ -14,6 +15,7 @@ docker --version
 docker compose version
 git --version
 ```
+Cần chủ động cài đặt 
 
 ### 1) Clone repository
 ```bash
@@ -125,7 +127,14 @@ Model sẽ được đặt ở thư mục ./models và mount vào container.
 Tạo thư mục:
 ```bash
 mkdir -p models
+cd models
 ```
+Nhập HF_TOKEN
+
+```bash
+HF_TOKEN=Your_huggingface_token
+```
+
 Download bằng wget 
 
 ```bash
@@ -138,7 +147,7 @@ Kiểm tra:
 ls -lah models
 ```
 
-Bạn phải thấy file .gguf nằm trong models/.
+Một file .gguf nằm trong models/.
 
 Lưu ý: Không commit model lên git (file rất lớn).
 
@@ -147,6 +156,7 @@ Lưu ý: Không commit model lên git (file rất lớn).
 
 Tạo file:
 ```bash
+cd Pickle-Pickle
 mkdir -p nginx
 nano nginx/default.conf
 ```
